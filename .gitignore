@@ -1,0 +1,8 @@
+# salidas de compilacion y datos generados
+build/
+
+# assets extraidos del Root.cpk del juego: no se redistribuyen
+extract/
+
+__pycache__/
+*.pyc
