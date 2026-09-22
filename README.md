@@ -181,6 +181,18 @@ No está en el layout: cuántas celdas se instancian, la paginación y el armado
 en `HUiHQWeaponSelect` dentro de `EDF.dll`. Si la cantidad de filas no se deriva del `area`, ampliar
 la grilla exige parche AOB (formato `Mods\Patches\*.txt`) o un plugin C++ con MinHook.
 
+## Reconstruir el mod
+
+```bash
+python tools/gen_layout.py    # los tres layouts, desde extract/UI/
+python tools/weapons.py       # catalogo de armas
+python tools/weapon_notes.py  # notas al principio de la descripcion
+python tools/paquete.py       # zip en ../builds/
+```
+
+`gen_layout.py` tiene la lista completa de valores editados por nodo, y reproduce los tres archivos
+byte por byte. Es la fuente del rediseño: `build/` es salida y no está versionado.
+
 ## Instalar un build
 
 ```bash
