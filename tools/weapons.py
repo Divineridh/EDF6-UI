@@ -18,7 +18,7 @@ def catalog(table_path, text_path):
     entries = [table.record(i) for i in table.children(WEAPON_LIST_RECORD)]
     names = [text.record(i) for i in text.children(WEAPON_LIST_RECORD)]
     if len(entries) != len(names):
-        raise SystemExit("tabla y texto no coinciden: %d vs %d" % (len(entries), len(names)))
+        raise SystemExit("table and text don't match: %d vs %d" % (len(entries), len(names)))
 
     return [weapon(index, entry, name) for index, (entry, name) in enumerate(zip(entries, names))]
 
@@ -31,11 +31,11 @@ def weapon(index, entry, name):
         "asset": entry[1],
         "class": CLASSES.get(category // 100, "?"),
         "category": category,
-        # entry[4] * 100 da 4x el "Lv" que muestra el juego. Se redondea antes de
-        # dividir porque en float 2.6 * 25 da 64.99 y perdiamos un nivel.
+        # entry[4] * 100 is 4x the "Lv" the game shows. It's rounded before
+        # dividing because in float 2.6 * 25 gives 64.99 and we lost a level.
         "level": math.floor(round(entry[4] * 100) / 4),
-        # entry[6] es el tope de mejora de cada stat: si el save iguala todos,
-        # el arma esta al maximo y el juego le pone estrella al nombre.
+        # entry[6] is each stat's upgrade cap: if the save matches them all, the
+        # weapon is maxed and the game puts a star on its name.
         "upgrades": [int(v) for v in entry[6]],
         "name": name[0],
         "description": name[1],
@@ -43,11 +43,11 @@ def weapon(index, entry, name):
     }
 
 
-# El segundo double de cada grupo es un codigo de tipo de stat, constante por
-# etiqueta (Capacity=0, Damage=8, Accuracy=13, Range/ShotSpeed=16, Reload=21).
-# El 25 guarda el intervalo en frames, no disparos por segundo: el Lysander trae
-# 240, que como "240/sec" es absurdo para un bolt-action y como 60/240 da los
-# 0.25/sec reales. Solo ROF y Beacon ROF lo usan.
+# The second double of each group is a stat type code, constant per label
+# (Capacity=0, Damage=8, Accuracy=13, Range/ShotSpeed=16, Reload=21).
+# 25 stores the interval in frames, not shots per second: the Lysander has 240,
+# which as "240/sec" is absurd for a bolt-action and as 60/240 gives the real
+# 0.25/sec. Only ROF and Beacon ROF use it.
 CODIGO_INTERVALO_EN_FRAMES = 25
 FRAMES_POR_SEGUNDO = 60.0
 
@@ -81,7 +81,7 @@ def number(value):
 def write_csv(rows, path):
     with open(path, "w", encoding="utf-8-sig", newline="") as handle:
         writer = csv.writer(handle)
-        writer.writerow(["index", "clase", "categoria", "nivel", "id", "nombre", "stats"])
+        writer.writerow(["index", "class", "category", "level", "id", "name", "stats"])
         for row in rows:
             stats = " | ".join("%s: %s" % (s["label"], s["text"]) for s in row["stats"])
             writer.writerow([row["index"], row["class"], row["category"], row["level"], row["id"], row["name"], stats])
@@ -96,4 +96,4 @@ if __name__ == "__main__":
     os.makedirs(os.path.dirname(out) or ".", exist_ok=True)
     json.dump(rows, open(out + ".json", "w", encoding="utf-8"), indent=1, ensure_ascii=False)
     write_csv(rows, out + ".csv")
-    print("%d armas -> %s.json / %s.csv" % (len(rows), out, out))
+    print("%d weapons -> %s.json / %s.csv" % (len(rows), out, out))

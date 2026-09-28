@@ -1,11 +1,11 @@
-"""Reconstruye los layouts modificados a partir de los del juego.
+"""Rebuilds the modified layouts from the game's own.
 
-Las ediciones son en sitio: patch.py reescribe floats y re-apunta strings a la
-tabla que el archivo ya tiene, asi que el tamaño no cambia y ningun offset se
-mueve. Reserializar un SGO/DSGO entero crashea el juego.
+The edits are in place: patch.py rewrites floats and re-points strings to the
+table the file already has, so the size doesn't change and no offset moves.
+Reserializing a whole SGO/DSGO crashes the game.
 
-Cada entrada es (ruta del nodo, valor). Un valor con "@" adelante es un string
-que se re-apunta a una entrada existente de la tabla.
+Each entry is (node path, value). A value starting with "@" is a string that
+gets re-pointed to an existing entry of the table.
 """
 
 import os
@@ -20,7 +20,7 @@ ORIGEN = os.path.join(RAIZ, "extract", "UI")
 SALIDA = os.path.join(RAIZ, "build", "UI")
 
 CAMBIOS = {
-# pantalla de equipamiento
+# equipment screen
 "LYT_HUIHQWEAPONSELECT.SGO": [
     ("2.2.0", "-600"),
     ("6.1.0.1.0", "1330"),
@@ -89,11 +89,11 @@ CAMBIOS = {
     ("40.3.2", "1360"),
     ("40.3.3", "647"),
 ],
-# marco decorativo del cuartel
+# the HQ's decorative frame
 "LYT_MAINFRAME.SGO": [
     ("10.1", "@app:/UI/Transparent_skin.sgo"),
 ],
-# cuadro de clase y equipo
+# class and equipment box
 "LYT_HUIHQCURRENTSTATUS.SGO": [
     ("9.2.0", "1710"),
     ("9.2.1", "593"),
@@ -119,7 +119,7 @@ def main():
                 e.set(ruta, valor)
         destino = os.path.join(SALIDA, nombre)
         open(destino, "wb").write(bytes(e.buf))
-        print("%s: %d valores, %d bytes" % (nombre, len(pares), len(e.buf)))
+        print("%s: %d values, %d bytes" % (nombre, len(pares), len(e.buf)))
 
 
 if __name__ == "__main__":

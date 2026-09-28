@@ -1,17 +1,17 @@
-"""Sube a la primera linea de la descripcion datos que el juego entierra al final.
+"""Moves to the first line of the description data the game buries at the end.
 
-Dos notas, ambas sobre WEAPONTEXT:
+Two notes, both on WEAPONTEXT:
 
-  - Tipo de impulso de Fencer. El dato ya existe, pero en la ultima linea: hay
-    que scrollear hasta el fondo para saber si el arma pide Side Thruster (dash)
-    o Jump Booster (salto).
-  - Cargador unico. Las armas con "Reload Time: ----" no recargan nunca: los
-    tiros del cargador son todos los que tenes en la mision.
+  - Fencer boost type. The data is already there, but on the last line: you
+    have to scroll to the bottom to learn whether the weapon wants Side Thruster
+    (dash) or Jump Booster (jump).
+  - Single magazine. Weapons with "Reload Time: ----" never reload: the shots
+    in the magazine are all you get for the mission.
 
-Por que la descripcion y no un stat nuevo: agregar una fila de stats implica
-hacer crecer un array del DSGO, que es exactamente lo que crasheo el juego
-cuando reescribimos el manual entero. La descripcion en cambio es un string
-suelto, y re-apuntar strings al final del archivo esta probado.
+Why the description and not a new stat: adding a stat row means growing a
+DSGO array, which is exactly what crashed the game when we rewrote the whole
+manual. The description instead is a standalone string, and re-pointing strings
+to the end of the file is proven.
 """
 
 import json
@@ -25,11 +25,13 @@ from dsgopatch import Patcher
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CATALOGO = os.path.join(RAIZ, "build", "catalog.json")
-# Si hay un WEAPONTEXT modeado instalado, se parchea ESE y no el vanilla: pisarlo
-# con el del cpk borraria los cambios del otro mod.
+# If a modded WEAPONTEXT is installed, THAT one is patched and not the vanilla
+# one: overwriting it with the cpk's would wipe the other mod's changes.
+# --vanilla forces the game's own file, which is what a public release must use:
+# shipping the modded one would redistribute someone else's mod.
 _MODEADO = os.path.join(RAIZ, "extract", "BRIAN", "WEAPONTEXT.EN.sgo")
 _VANILLA = os.path.join(RAIZ, "extract", "WEAPON", "WEAPON", "WEAPONTEXT.EN.SGO")
-TEXTO = _MODEADO if os.path.exists(_MODEADO) else _VANILLA
+TEXTO = _MODEADO if os.path.exists(_MODEADO) and "--vanilla" not in sys.argv else _VANILLA
 SALIDA = os.path.join(RAIZ, "build", "WEAPON", "WEAPONTEXT.EN.SGO")
 
 LISTA_MAESTRA = 1
@@ -108,9 +110,9 @@ def main():
     open(SALIDA, "wb").write(datos)
 
     print("%s" % SALIDA)
-    print("  %d armas de Fencer con linea de impulso" % cuenta["impulso"])
-    print("  %d armas con linea de cargador unico" % cuenta["cargador"])
-    print("  %d bytes -> %d (solo se agrego al final)" % (len(origen), len(datos)))
+    print("  %d Fencer weapons with a boost line" % cuenta["impulso"])
+    print("  %d weapons with a single-magazine line" % cuenta["cargador"])
+    print("  %d bytes -> %d (only appended at the end)" % (len(origen), len(datos)))
 
 
 if __name__ == "__main__":

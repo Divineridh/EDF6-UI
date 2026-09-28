@@ -1,13 +1,15 @@
 # EDF6 UI Mod
 
-Herramientas propias para leer y modificar la UI de Earth Defense Force 6 sin depender de binarios de terceros.
+Our own tools to read and modify Earth Defense Force 6's UI without depending on third-party
+binaries, and a mod built with them: a redesigned equipment screen and weapon notes. The mod is a
+pre-release (see the known issues in `package/README.txt`).
 
-Juego: `C:\Descargas Pesadas\EARTH DEFENSE FORCE 6\EARTH DEFENSE FORCE 6`
-Loader ya instalado: EDFModLoader v1.0.10 (`winmm.dll`, `Redirect=True`).
+Game: `C:\Descargas Pesadas\EARTH DEFENSE FORCE 6\EARTH DEFENSE FORCE 6`
+Loader already installed: EDFModLoader v1.0.10 (`winmm.dll`, `Redirect=True`).
 
-## Cómo se arma la UI
+## How the UI is put together
 
-`MAINSCRIPT.AS` (AngelScript) maneja el flujo de pantallas. La rutina `HQMain()` carga la base:
+`MAINSCRIPT.AS` (AngelScript) drives the screen flow. The `HQMain()` routine loads the base:
 
 ```
 g_bg.Play("app:/ui/lyt_bg.sgo");
@@ -15,188 +17,188 @@ g_main_frame.Play("app:/ui/lyt_MainFrame.sgo");
 CreateUiFile("app:/ui/lyt_HUiHQMain.sgo");
 ```
 
-Cada pantalla es un `.sgo` dentro de `Root.cpk` (carpeta `UI/`, 467 layouts). El `.sgo` es la
-declaración de la pantalla; los `.rab` que lo acompañan son el arte. El último string del layout
-(`HUiHQWeaponSelect`) es el nombre de la clase C++ dentro de `EDF.dll` que le da comportamiento.
+Each screen is a `.sgo` inside `Root.cpk` (folder `UI/`, 467 layouts). The `.sgo` declares the
+screen; the `.rab` files next to it are the art. The layout's last string (`HUiHQWeaponSelect`) is
+the name of the C++ class inside `EDF.dll` that gives it behavior.
 
-Pantalla de equipamiento: `UI/LYT_HUIHQWEAPONSELECT.SGO`.
+Equipment screen: `UI/LYT_HUIHQWEAPONSELECT.SGO`.
 
-## Formato SGO (reverse engineering propio)
+## SGO format (our own reverse engineering)
 
-Cabecera de 0x20 bytes:
+0x20-byte header:
 
-| offset | contenido |
-|--------|-----------|
+| offset | content |
+|--------|---------|
 | 0x00 | `SGO\0` |
-| 0x04 | versión (0x102) |
-| 0x08 | cantidad de registros raíz |
-| 0x0C | offset de la tabla de registros |
-| 0x10 / 0x14 | cantidad / offset del índice de nombres |
-| 0x1C | base de la tabla de strings (UTF-16LE, terminados en `\0\0`) |
+| 0x04 | version (0x102) |
+| 0x08 | number of root records |
+| 0x0C | offset of the record table |
+| 0x10 / 0x14 | count / offset of the name index |
+| 0x1C | base of the string table (UTF-16LE, `\0\0`-terminated) |
 
-Todo el archivo es un árbol de registros de 12 bytes: `(tipo u32, cantidad u32, valor u32)`.
+The whole file is a tree of 12-byte records: `(type u32, count u32, value u32)`.
 
-| tipo | significado | valor |
-|------|-------------|-------|
-| 0 | array | offset **relativo al propio registro**; `cantidad` = hijos |
+| type | meaning | value |
+|------|---------|-------|
+| 0 | array | offset **relative to the record itself**; `count` = children |
 | 1 | int | inline |
 | 2 | float | inline |
-| 3 | string | offset relativo al registro, apunta a UTF-16LE |
+| 3 | string | offset relative to the record, points to UTF-16LE |
 
-Un widget es un array con esta forma:
+A widget is an array shaped like this:
 
 ```
-[clase, skin, pos[x,y,z], area[x,y,w,h], flags[], int, int, props[[clave,valor],...]]
+[class, skin, pos[x,y,z], area[x,y,w,h], flags[], int, int, props[[key,value],...]]
 ```
 
-El espacio de coordenadas es 1920x1080 fijo. Solo existen 4 clases de widget:
-`Layout`, `TextField`, `Button`, `TexButtonTextField`.
+The coordinate space is a fixed 1920x1080. There are only 4 widget classes: `Layout`, `TextField`,
+`Button`, `TexButtonTextField`.
 
-Propiedades que acepta el layout (vocabulario completo, sacado de los 467 archivos):
+Properties the layout accepts (full vocabulary, taken from the 467 files):
 `pos`, `area`, `mergin`, `stencil`, `stencil_mergin`, `scroll_bar_info`, `scroll_mergin`,
 `font_size`, `font_flag`, `font_border_width`, `font_color`, `font_border_color`, `text`,
 `text_dr`, `callback`, `trans_form`, `animation_sec`, `ease_func`, `close_scale`, `hide`,
 `transition`, `transition_dir`, `sgo_path`, `init_args`, `hcoord`, `flag_layout`.
 
-No hay ninguna propiedad de cantidad de celdas, filas ni columnas.
+There's no property for the number of cells, rows or columns.
 
-## Formato DSGO (el hermano de 64 bits)
+## DSGO format (the 64-bit sibling)
 
-Los datos del juego — catálogo de armas, textos, manual — no son SGO sino **DSGO**. Mismo árbol, pero
-todo el archivo es una **lista plana de registros de 16 bytes**; el anidamiento se hace por índice, no
-por offset.
+The game data (weapon catalog, texts, manual) isn't SGO but **DSGO**. Same tree, but the whole file is
+a **flat list of 16-byte records**; nesting is done by index, not by offset.
 
-Cabecera de 0x10 bytes:
+0x10-byte header:
 
-| offset | contenido |
-|--------|-----------|
+| offset | content |
+|--------|---------|
 | 0x00 | `DSGO` |
-| 0x04 | 0x10 (tamaño de registro) |
-| 0x08 | cantidad de registros |
-| 0x0C | offset del primer registro (0x10) |
+| 0x04 | 0x10 (record size) |
+| 0x08 | number of records |
+| 0x0C | offset of the first record (0x10) |
 
-Cada registro es `(valor u64, tipo u32, 0 u32)`:
+Each record is `(value u64, type u32, 0 u32)`:
 
-| tipo | significado | dónde está el dato |
-|------|-------------|--------------------|
-| 0 | **double** | los 8 bytes del `valor` son el IEEE754 |
-| 1 | **string** | UTF-16LE en `offset_del_registro + valor` |
-| 2 | int | inline en `valor` |
-| 3 | **array** | descriptor en `offset_del_registro + valor` |
+| type | meaning | where the data is |
+|------|---------|-------------------|
+| 0 | **double** | the 8 bytes of `value` are the IEEE754 |
+| 1 | **string** | UTF-16LE at `record_offset + value` |
+| 2 | int | inline in `value` |
+| 3 | **array** | descriptor at `record_offset + value` |
 
-El descriptor de array son 16 bytes `(u64 0, u32 0x10, u32 cantidad)` seguidos de `cantidad` **índices
-u32 a la tabla de registros**. Por eso un mismo registro puede colgar de dos arrays: el formato comparte
-nodos.
+The array descriptor is 16 bytes `(u64 0, u32 0x10, u32 count)` followed by `count` **u32 indices into
+the record table**. So the same record can hang from two arrays: the format shares nodes.
 
-⚠️ Los offsets de string y de array son **relativos al registro que los declara**, igual que en el SGO
-de 32 bits. Tomarlos como absolutos parsea casi todo bien y devuelve strings cortados por la mitad — que
-es el síntoma de que la base está mal, no de que el archivo esté raro.
-
-```bash
-python tools/dsgo.py <archivo> json    # árbol completo
-python tools/dsgo.py <archivo> 1       # sólo el registro 1
-```
-
-## Catálogo de armas
-
-`WEAPON/WEAPONTABLE.SGO` y `WEAPON/WEAPONTEXT.<lang>.SGO` son DSGO y **el registro 1 de cada uno es la
-lista maestra, con 1564 entradas en el mismo orden**.
-
-Una entrada de la tabla: `[id interno, path del sgo, categoría, 1.0, nivel/100, ?, [ratings], 1.0, ?]`.
-La categoría codifica la clase en las centenas — `0xx` Ranger, `1xx` Wing Diver, `2xx` Fencer,
-`3xx` Air Raider — y la unidad es el tipo de arma dentro de la clase.
-
-Una entrada del texto: `[nombre, descripción, [stats]]`, y cada stat es
-`[etiqueta, plantilla, valores...]` donde la plantilla usa `$0`, `$1`… y cada valor es un array de 7
-doubles cuyo **primer elemento es el número** (el resto son parámetros de formato).
+⚠️ String and array offsets are **relative to the record that declares them**, same as the 32-bit
+SGO. Taking them as absolute parses almost everything fine and returns strings cut in half, which is
+the symptom of a wrong base, not of a weird file.
 
 ```bash
-python tools/weapons.py                # -> build/catalog.json y build/catalog.csv
+python tools/dsgo.py <file> json    # full tree
+python tools/dsgo.py <file> 1       # just record 1
 ```
 
-⚠️ El nivel sale de multiplicar por 100 el quinto campo. Da valores razonables (0 a 470) pero **no está
-verificado contra la pantalla del juego**, y los ítems de colaboración caen en decimales (32.03), así
-que puede ser el orden de dropeo y no el "Lv" que se muestra.
+## Weapon catalog
 
-## Manual electrónico
+`WEAPON/WEAPONTABLE.SGO` and `WEAPON/WEAPONTEXT.<lang>.SGO` are DSGO and **record 1 of each is the
+master list, with 1564 entries in the same order**.
 
-> El compendium llegó a inyectarse acá como un capítulo extra (`tools/compendium.py`, borrado en
-> sep-2026). Esa vía quedó descartada a favor del overlay del plugin en `EDF6-Compendium`: el
-> capítulo era estático, entraba una sola clase por página, pisaba una página real del manual, se
-> indexaba por nombre —y hay armas con nombre repetido— y sólo se abría desde el menú de pausa.
-> Nunca llegó a instalarse en el juego. Lo que sigue es la documentación del formato, que sigue
-> valiendo: la técnica de re-apuntar strings al final del archivo es la que usa `weapon_notes.py`.
+A table entry: `[internal id, sgo path, category, 1.0, level/100, ?, [upgrade caps], 1.0, ?]`. The
+category encodes the class in the hundreds (`0xx` Ranger, `1xx` Wing Diver, `2xx` Fencer, `3xx` Air
+Raider) and the units are the weapon type within the class. The "Lv" the game shows is
+`floor(round(field * 100) / 4)`, checked against 18 weapons on the equipment screen.
 
-`ETC/EMANUAL.EN.DSGO` es el manual, y es un documento rich-text data-driven:
-
-- 5 arrays de **67 páginas** cada uno (registros 1, 986, 1551, 2116 y 2681), que comparten casi todas
-  las páginas entre sí.
-- Una página es `['', [bloques]]`; un bloque de texto es `[0.0, "markup"]` y uno de imagen es
-  `[1.0, "archivo.dds", 1.0]`.
-- El markup es real: `<font color=%dq%#c0ffc0%dq%>…</font>`, donde `%dq%` escapa la comilla doble.
-  `%LOCALE%` en el nombre de una imagen se resuelve por idioma.
-- Lo lee la clase `HUiManual` de `EDF.dll` con el layout `UI/LYT_MANUAL.SGO`.
-
-Es accesible en el juego: el texttable trae `OptionPlayer_CallManual` → "Read Instruction Manual" y
-"Instruction Manual Available During Gameplay", o sea que se abre desde el menú de pausa.
-
-## Herramientas
+A text entry: `[name, description, [stats]]`, and each stat is `[label, template, values...]` where
+the template uses `$0`, `$1`… Each value is a group of 7 doubles: base (the value at star 5), stat
+type, save byte, max level, two curve coefficients and whether it's fractional. How they combine is
+documented in EDF6-Compendium's README.
 
 ```bash
-python tools/cpk.py dirs    "<Root.cpk>"                      # inventario del archivo
-python tools/cpk.py list    "<Root.cpk>" ui/                  # listar por patrón
-python tools/cpk.py extract "<Root.cpk>" "ui/&.sgo" <destino> # extraer (patrones con &)
-python tools/sgo.py <archivo.sgo> json                        # layout completo a JSON
-python tools/patch.py <archivo.sgo> slots 36.                 # slots editables de un nodo
-python tools/patch.py <origen.sgo> set 36.3.3=401 <destino.sgo>
-python tools/dsgo.py <archivo.dsgo> json                      # datos (armas, textos, manual)
-python tools/weapons.py                                       # catálogo de armas a JSON/CSV
+python tools/weapons.py                # -> build/catalog.json and build/catalog.csv
 ```
 
-`patch.py` reescribe los valores **en el mismo lugar del binario**: el archivo mantiene tamaño y
-estructura idénticos, así que no hace falta reserializar ni hay riesgo de corromper offsets.
+## Electronic manual
 
-## Mapa de LYT_HUIHQWEAPONSELECT.SGO
+> The compendium was once injected here as an extra chapter (`tools/compendium.py`, deleted in
+> Sep-2026). That route was dropped in favor of the plugin overlay in `EDF6-Compendium`: the chapter
+> was static, fit a single class per page, overwrote a real manual page, was indexed by name (and
+> some weapons share a name) and only opened from the pause menu. It was never installed in the game.
+> What follows documents the format, which still holds: the technique of re-pointing strings to the
+> end of the file is what `weapon_notes.py` uses.
 
-51 registros raíz. Los relevantes:
+`ETC/EMANUAL.EN.DSGO` is the manual, and it's a data-driven rich-text document:
 
-| nodo | qué es | pos | area |
-|------|--------|-----|------|
-| 40 | WindowUpper — marco de la lista | 191, 147 | 1187 x 302 |
-| 26 | WeaponIndexArea — fila de categorías | 18, 23 | 1162 x 39 |
-| 36 | WeaponSelectArea — viewport de la grilla | 18, 67 | 1162 x 201 |
-| 34 | celda de arma (plantilla) | — | 355 x 40 |
-| 35 | celda de categoría (plantilla) | — | 355 x 39 |
-| 39 | WindowLower — panel de descripción | 256, 468 | 1130 x 498 |
-| 23 | área scrolleable de la descripción | 38, 89 | 1050 x 364 |
-| 21 | columna de la lista con su scrollbar | — | 355 x 201 |
+- 5 arrays of **67 pages** each (records 1, 986, 1551, 2116 and 2681), which share almost all their
+  pages.
+- A page is `['', [blocks]]`; a text block is `[0.0, "markup"]` and an image block is
+  `[1.0, "file.dds", 1.0]`.
+- The markup is real: `<font color=%dq%#c0ffc0%dq%>…</font>`, where `%dq%` escapes the double quote.
+  `%LOCALE%` in an image name resolves per language.
+- It's read by `EDF.dll`'s `HUiManual` class with the `UI/LYT_MANUAL.SGO` layout.
 
-201 / 40 = 5 filas, 1162 / 355 = 3 columnas → 15 armas visibles.
+It's reachable in game: the text table has `OptionPlayer_CallManual` → "Read Instruction Manual" and
+"Instruction Manual Available During Gameplay", so it opens from the pause menu.
 
-## Límites
-
-Se puede tocar por layout: geometría, tipografía, márgenes, skins, scroll, animaciones y textos.
-
-No está en el layout: cuántas celdas se instancian, la paginación y el armado de la grilla. Eso vive
-en `HUiHQWeaponSelect` dentro de `EDF.dll`. Si la cantidad de filas no se deriva del `area`, ampliar
-la grilla exige parche AOB (formato `Mods\Patches\*.txt`) o un plugin C++ con MinHook.
-
-## Reconstruir el mod
+## Tools
 
 ```bash
-python tools/gen_layout.py    # los tres layouts, desde extract/UI/
-python tools/weapons.py       # catalogo de armas
-python tools/weapon_notes.py  # notas al principio de la descripcion
-python tools/paquete.py       # zip en ../builds/
+python tools/cpk.py dirs    "<Root.cpk>"                      # file inventory
+python tools/cpk.py list    "<Root.cpk>" ui/                  # list by pattern
+python tools/cpk.py extract "<Root.cpk>" "ui/&.sgo" <dest>    # extract (patterns joined with &)
+python tools/sgo.py <file.sgo> json                           # full layout as JSON
+python tools/patch.py <file.sgo> slots 36.                    # editable slots of a node
+python tools/patch.py <source.sgo> set 36.3.3=401 <dest.sgo>
+python tools/dsgo.py <file.dsgo> json                         # data (weapons, texts, manual)
+python tools/weapons.py                                       # weapon catalog to JSON/CSV
 ```
 
-`gen_layout.py` tiene la lista completa de valores editados por nodo, y reproduce los tres archivos
-byte por byte. Es la fuente del rediseño: `build/` es salida y no está versionado.
+`patch.py` rewrites values **in the same place in the binary**: the file keeps the same size and
+structure, so nothing has to be reserialized and there's no risk of corrupting offsets.
 
-## Instalar un build
+## Map of LYT_HUIHQWEAPONSELECT.SGO
+
+51 root records. The relevant ones:
+
+| node | what it is | pos | area |
+|------|------------|-----|------|
+| 40 | WindowUpper: frame of the list | 191, 147 | 1187 x 302 |
+| 26 | WeaponIndexArea: category row | 18, 23 | 1162 x 39 |
+| 36 | WeaponSelectArea: grid viewport | 18, 67 | 1162 x 201 |
+| 34 | weapon cell (template) | — | 355 x 40 |
+| 35 | category cell (template) | — | 355 x 39 |
+| 39 | WindowLower: description panel | 256, 468 | 1130 x 498 |
+| 23 | scrollable description area | 38, 89 | 1050 x 364 |
+| 21 | list column with its scrollbar | — | 355 x 201 |
+
+201 / 40 = 5 rows, 1162 / 355 = 3 columns → 15 visible weapons.
+
+Every mission era swaps the screen's background and some skins with it. Node 40 (the list) uses
+`Window07_WeaponSel2_skin` explicitly, because the era skin drew an oversized box behind the list on
+every background but the blue one.
+
+## Limits
+
+What can be changed per layout: geometry, typography, margins, skins, scroll, animations and texts.
+
+Not in the layout: how many cells get instantiated, the paging and the grid construction. That lives
+in `HUiHQWeaponSelect` inside `EDF.dll`. If the row count isn't derived from `area`, growing the grid
+takes an AOB patch (`Mods\Patches\*.txt` format) or a C++ plugin with MinHook.
+
+## Rebuilding the mod
+
+```bash
+python tools/gen_layout.py    # the three layouts, from extract/UI/
+python tools/weapons.py       # weapon catalog
+python tools/weapon_notes.py  # notes at the start of the description (--vanilla for a release)
+python tools/package.py       # zip in ../builds/
+```
+
+`gen_layout.py` has the full list of edited values per node, and reproduces the three files byte by
+byte. It's the source of the redesign: `build/` is output and isn't versioned.
+
+## Installing a build
 
 ```bash
 cp -r "C:/ModsCaseros/EDF6-UI/build/UI" "C:/Descargas Pesadas/EARTH DEFENSE FORCE 6/EARTH DEFENSE FORCE 6/Mods/"
 ```
 
-Para revertir, borrar el archivo de `Mods\UI\`. El `Root.cpk` nunca se toca.
+To revert, delete the file from `Mods\UI\`. `Root.cpk` is never touched.
