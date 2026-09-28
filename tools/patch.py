@@ -56,7 +56,7 @@ class Editable(Sgo):
     def repoint(self, path, text):
         target = self.table().get(text)
         if target is None:
-            raise KeyError("ese string no existe en la tabla del archivo: " + text)
+            raise KeyError("that string isn't in the file's table: " + text)
         for p, rec, old in self.str_slots():
             if p == path:
                 struct.pack_into("<II", self.buf, rec + 4, len(text), target - rec)
@@ -71,7 +71,7 @@ class Editable(Sgo):
                 elif kind == "int":
                     struct.pack_into("<I", self.buf, off, int(value))
                 else:
-                    raise ValueError("no se puede reescribir un string en sitio: " + path)
+                    raise ValueError("can't rewrite a string in place: " + path)
                 return old
         raise KeyError(path)
 
@@ -106,4 +106,4 @@ if __name__ == "__main__":
                 old = e.set(path, value)
             print("%-14s %s -> %s" % (path, old, value))
         open(dest, "wb").write(bytes(e.buf))
-        print("escrito", dest, len(e.buf), "bytes")
+        print("wrote", dest, len(e.buf), "bytes")

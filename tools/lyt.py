@@ -12,7 +12,7 @@ def props(p):
 
 data = open(sys.argv[1], "rb").read()
 tree = Sgo(data).tree()
-print("nodos raiz:", len(tree))
+print("root nodes:", len(tree))
 for i, n in enumerate(tree):
     if not isinstance(n, list) or not n:
         print(i, n); continue

@@ -78,7 +78,7 @@ class Utf:
         if typ == 0x0B:
             off, ln = struct.unpack_from(">II", body, p)
             return body[data_off + off:data_off + off + ln], p + 8
-        raise ValueError("tipo desconocido %x" % typ)
+        raise ValueError("unknown type %x" % typ)
 
 
 def crilayla(data):
@@ -186,8 +186,8 @@ if __name__ == "__main__":
             a[0] += 1
             a[1] += e["extract"]
         for d in sorted(agg):
-            print("%-60s %6d archivos %12d bytes" % (d, agg[d][0], agg[d][1]))
-        print("TOTAL entradas:", sum(a[0] for a in agg.values()))
+            print("%-60s %6d files %12d bytes" % (d, agg[d][0], agg[d][1]))
+        print("TOTAL entries:", sum(a[0] for a in agg.values()))
     elif cmd == "list":
         pat = sys.argv[3].lower()
         for e in cpk.entries():
@@ -204,4 +204,4 @@ if __name__ == "__main__":
                 with open(out, "wb") as fh:
                     fh.write(cpk.read(e))
                 n += 1
-        print("extraidos", n)
+        print("extracted", n)

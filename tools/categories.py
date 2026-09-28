@@ -1,7 +1,7 @@
-"""Nombres de categoria de arma, desde DEFAULTPACKAGE/CONFIG.SGO.
+"""Weapon category names, from DEFAULTPACKAGE/CONFIG.SGO.
 
-Ese archivo es SGO pero **big-endian** (la firma viene como '\\0OGS'), a
-diferencia de los layouts de UI. El nodo 3 es la tabla id -> clave.
+That file is SGO but **big-endian** (the signature reads '\\0OGS'), unlike the
+UI layouts. Node 3 is the id -> key table.
 """
 
 import json
@@ -62,7 +62,7 @@ def main():
     cats = {int(par[0]): {"key": par[1], "name": legible(par[1])} for par in tabla}
     os.makedirs(os.path.dirname(SALIDA), exist_ok=True)
     json.dump(cats, open(SALIDA, "w", encoding="utf-8"), indent=1, ensure_ascii=False)
-    print("%d categorias -> %s" % (len(cats), SALIDA))
+    print("%d categories -> %s" % (len(cats), SALIDA))
     for k in sorted(cats)[:6]:
         print("  %3d  %s" % (k, cats[k]["name"]))
 

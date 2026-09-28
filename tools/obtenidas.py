@@ -27,8 +27,8 @@ def cargar(respaldo_local=None):
 
 def informe(ruta, nombres, respaldo_local=None):
     if nombres is None:
-        lineas = ["  SIN obtenidas.txt: la columna de obtenidas es un placeholder por nivel.",
-                  "  Buscado en:"]
+        lineas = ["  NO obtenidas.txt: the owned column is a placeholder by level.",
+                  "  Looked in:"]
         lineas += ["    " + r for r in candidatas(respaldo_local)]
         return "\n".join(lineas)
-    return "  obtenidas: %d nombres desde %s" % (len(nombres), ruta)
+    return "  owned: %d names from %s" % (len(nombres), ruta)

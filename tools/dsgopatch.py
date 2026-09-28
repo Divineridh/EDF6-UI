@@ -5,11 +5,11 @@ TYPE_STRING = 1
 
 
 class Patcher:
-    """Edita un DSGO sin reescribirlo.
+    """Edits a DSGO without rewriting it.
 
-    Los strings nuevos se agregan al final del archivo y se re-apunta el
-    registro: la tabla de registros no cambia de tamano, asi que ningun offset
-    existente se mueve. Misma tecnica que patch.py sobre los layouts SGO.
+    New strings are appended at the end of the file and the record is
+    re-pointed: the record table doesn't change size, so no existing offset
+    moves. Same technique as patch.py on the SGO layouts.
     """
 
     def __init__(self, data):
@@ -27,7 +27,7 @@ class Patcher:
     def set_string(self, index, text):
         o = self.record_offset(index)
         if self.kind(index) != TYPE_STRING:
-            raise TypeError("el registro %d no es un string" % index)
+            raise TypeError("record %d isn't a string" % index)
         self.buf += b"\x00" * ((-len(self.buf)) % 8)
         target = len(self.buf)
         self.buf += text.encode("utf-16le") + b"\x00\x00"
