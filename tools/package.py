@@ -19,6 +19,8 @@ CONTENTS = [
      "Mods/UI/LYT_MAINFRAME.SGO"),
     (os.path.join(BUILD, "UI", "LYT_HUIHQCURRENTSTATUS.SGO"),
      "Mods/UI/LYT_HUIHQCURRENTSTATUS.SGO"),
+    (os.path.join(BUILD, "Patches", "EDF6UI_EquipmentScreen.txt"),
+     "Mods/Patches/EDF6UI_EquipmentScreen.txt"),
     (os.path.join(BUILD, "WEAPON", "WEAPONTEXT.EN.SGO"),
      "Mods/WEAPON/WEAPONTEXT.EN.SGO"),
     (os.path.join(SOURCE, "README.txt"), "README.txt"),
