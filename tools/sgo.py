@@ -43,6 +43,14 @@ class Sgo:
     def tree(self):
         return [self.record(self.root_off + i * 12) for i in range(self.root_count)]
 
+    def names(self):
+        out = {}
+        for i in range(self.name_count):
+            entry = self.name_off + i * 8
+            rel, index = struct.unpack_from("<II", self.d, entry)
+            out[index] = self.string_at(entry + rel)
+        return out
+
 
 def dump(node, indent=0, out=sys.stdout, path=""):
     pad = "  " * indent

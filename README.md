@@ -145,6 +145,11 @@ python tools/cpk.py dirs    "<Root.cpk>"                      # file inventory
 python tools/cpk.py list    "<Root.cpk>" ui/                  # list by pattern
 python tools/cpk.py extract "<Root.cpk>" "ui/&.sgo" <dest>    # extract (patterns joined with &)
 python tools/sgo.py <file.sgo> json                           # full layout as JSON
+python tools/lyt.py <file.sgo>                                # named nodes, flags, coords and the tree
+python tools/rab.py <file.rab> [dest]                         # list or extract an SSA archive (CMPL)
+python tools/mdb.py <file.mdb>                                # bones, textures and skinned vertices
+python tools/skins.py [filter...]                             # minimum size and overflow per era
+python tools/skinview.py <SKIN> <w> <h> <dest>               # render a skin at a size, per era family
 python tools/patch.py <file.sgo> slots 36.                    # editable slots of a node
 python tools/patch.py <source.sgo> set 36.3.3=401 <dest.sgo>
 python tools/dsgo.py <file.dsgo> json                         # data (weapons, texts, manual)
@@ -154,51 +159,40 @@ python tools/weapons.py                                       # weapon catalog t
 `patch.py` rewrites values **in the same place in the binary**: the file keeps the same size and
 structure, so nothing has to be reserialized and there's no risk of corrupting offsets.
 
-## Map of LYT_HUIHQWEAPONSELECT.SGO
+## Equipment screen
 
-51 root records. The relevant ones:
+The full analysis is in [docs/equipment-screen.md](docs/equipment-screen.md): node names and the
+`layout_tree` hierarchy, how skins stretch, why a layout tuned in one mission era breaks in the
+others, and what `EDF.dll` hard-codes. The short version:
 
-| node | what it is | pos | area |
-|------|------------|-----|------|
-| 40 | WindowUpper: frame of the list | 191, 147 | 1187 x 302 |
-| 26 | WeaponIndexArea: category row | 18, 23 | 1162 x 39 |
-| 36 | WeaponSelectArea: grid viewport | 18, 67 | 1162 x 201 |
-| 34 | weapon cell (template) | — | 355 x 40 |
-| 35 | category cell (template) | — | 355 x 39 |
-| 39 | WindowLower: description panel | 256, 468 | 1130 x 498 |
-| 23 | scrollable description area | 38, 89 | 1050 x 364 |
-| 21 | list column with its scrollbar | — | 355 x 201 |
-
-201 / 40 = 5 rows, 1162 / 355 = 3 columns → 15 visible weapons.
-
-Every mission era swaps the screen's background and some skins with it. Node 40 (the list) uses
-`Window07_WeaponSel2_skin` explicitly, because the era skin drew an oversized box behind the list on
-every background but the blue one.
-
-## Limits
-
-What can be changed per layout: geometry, typography, margins, skins, scroll, animations and texts.
-
-Not in the layout: how many cells get instantiated, the paging and the grid construction. That lives
-in `HUiHQWeaponSelect` inside `EDF.dll`. If the row count isn't derived from `area`, growing the grid
-takes an AOB patch (`Mods\Patches\*.txt` format) or a C++ plugin with MinHook.
+- Every root record has a name (name index at header 0x10/0x14) and record `layout_tree` is the
+  hierarchy. Only nodes in the tree are drawn; the rest are templates the C++ instantiates.
+- `Window` skins are meshes whose pieces are bound to the four corners. Each skin has a minimum size,
+  and the meshes of the B/C eras differ from the blue one (Window07 needs 929-1030 x 315-387 and
+  draws a 534 px line past its right edge in B/C).
+- `EDF.dll` creates 12 stat lines (13 with the one in the layout), a 355 x 40 selection cursor and a
+  250 px width for item and category names. The last two can be patched with `Mods\Patches`.
 
 ## Rebuilding the mod
 
 ```bash
-python tools/gen_layout.py    # the three layouts, from extract/UI/
+python tools/gen_layout.py    # the three layouts from extract/UI/, and the EDF.dll patch
 python tools/weapons.py       # weapon catalog
 python tools/weapon_notes.py  # notes at the start of the description (--vanilla for a release)
 python tools/package.py       # zip in ../builds/
 ```
 
 `gen_layout.py` has the full list of edited values per node, and reproduces the three files byte by
-byte. It's the source of the redesign: `build/` is output and isn't versioned.
+byte. It's the source of the redesign: `build/` is output and isn't versioned. The geometry comes
+from a few constants at the top (column width, rows, panel sizes), and the patch in
+`build/Patches/EDF6UI_EquipmentScreen.txt` is written from the same column width.
 
 ## Installing a build
 
 ```bash
 cp -r "C:/ModsCaseros/EDF6-UI/build/UI" "C:/Descargas Pesadas/EARTH DEFENSE FORCE 6/EARTH DEFENSE FORCE 6/Mods/"
+cp "C:/ModsCaseros/EDF6-UI/build/Patches/EDF6UI_EquipmentScreen.txt" "C:/Descargas Pesadas/EARTH DEFENSE FORCE 6/EARTH DEFENSE FORCE 6/Mods/Patches/"
 ```
 
-To revert, delete the file from `Mods\UI\`. `Root.cpk` is never touched.
+The patch needs EDFModLoader's `Patcher` plugin and is applied when the game starts. To revert,
+delete the files from `Mods\UI\` and `Mods\Patches\`. `Root.cpk` is never touched.
