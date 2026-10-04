@@ -149,6 +149,7 @@ python tools/lyt.py <file.sgo>                                # named nodes, fla
 python tools/rab.py <file.rab> [dest]                         # list or extract an SSA archive (CMPL)
 python tools/mdb.py <file.mdb>                                # bones, textures and skinned vertices
 python tools/skins.py [filter...]                             # minimum size and overflow per era
+python tools/skinview.py <SKIN> <w> <h> <dest>               # render a skin at a size, per era family
 python tools/patch.py <file.sgo> slots 36.                    # editable slots of a node
 python tools/patch.py <source.sgo> set 36.3.3=401 <dest.sgo>
 python tools/dsgo.py <file.dsgo> json                         # data (weapons, texts, manual)
@@ -169,8 +170,8 @@ others, and what `EDF.dll` hard-codes. The short version:
 - `Window` skins are meshes whose pieces are bound to the four corners. Each skin has a minimum size,
   and the meshes of the B/C eras differ from the blue one (Window07 needs 929-1030 x 315-387 and
   draws a 534 px line past its right edge in B/C).
-- `EDF.dll` hard-codes 12 stat lines, a 355 x 40 selection cursor and a 250 px width for item and
-  category names. The last two can be patched with `Mods\Patches`.
+- `EDF.dll` creates 12 stat lines (13 with the one in the layout), a 355 x 40 selection cursor and a
+  250 px width for item and category names. The last two can be patched with `Mods\Patches`.
 
 ## Rebuilding the mod
 

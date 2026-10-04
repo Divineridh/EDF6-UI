@@ -24,7 +24,8 @@ SALIDA = os.path.join(RAIZ, "build", "UI")
 PATCHES = os.path.join(RAIZ, "build", "Patches")
 PATCH_FILE = "EDF6UI_EquipmentScreen.txt"
 
-FLAT = "@app:/UI/ScrollBar_guide_skin.sgo"
+PANEL = "@app:/UI/Window_Test01_skin.sgo"
+PANEL_MARGIN = 24
 NONE = "@app:/UI/Transparent_skin.sgo"
 OFFSCREEN = -600
 
@@ -43,9 +44,10 @@ GRID_H = ROWS * ROW_H
 HEADER_Y = 14
 HEADER_H = 39
 GRID_Y = HEADER_Y + HEADER_H + 5
-BAR_THICKNESS = 14
-UNDER_BAR_Y = GRID_Y + GRID_H + 6
-LIST_H = UNDER_BAR_Y + BAR_THICKNESS + 12
+BAR_THICKNESS = 10
+BAR_CLEARANCE = 14
+UNDER_BAR_Y = GRID_Y + GRID_H + BAR_CLEARANCE + BAR_THICKNESS
+LIST_H = UNDER_BAR_Y + 12
 
 NAME_X = 16
 LEVEL_X = COLUMN_W - 105
@@ -59,10 +61,11 @@ BADGE_Y = (ROW_H - BADGE_H) // 2
 DESC_PANEL_Y = CONTENT_TOP + LIST_H + 16
 DESC_PANEL_H = CONTENT_BOTTOM - DESC_PANEL_Y
 DESC_PAD = 16
-TITLE_Y = DESC_PANEL_Y + 8
-TITLE_H = 36
-DESC_Y = TITLE_Y + TITLE_H + 2
-DESC_H = CONTENT_BOTTOM - 10 - DESC_Y
+TITLE_Y = DESC_PANEL_Y + 14
+TITLE_H = 34
+DESC_LINE_H = 25
+DESC_Y = TITLE_Y + TITLE_H + 4
+DESC_H = (CONTENT_BOTTOM - 12 - DESC_Y) // DESC_LINE_H * DESC_LINE_H
 
 PANEL_X = LIST_X + LIST_W + 20
 PANEL_W = 560
@@ -71,7 +74,7 @@ CLASS_Y = CONTENT_BOTTOM - CLASS_H
 CLASS_FRAME_OVERHANG = 26
 STATS_H = CLASS_Y - CLASS_FRAME_OVERHANG - 8 - CONTENT_TOP
 STATS_PAD_TOP = 12
-STAT_LINES = 12
+STAT_LINES = 13
 STAT_PITCH = (STATS_H - 2 * STATS_PAD_TOP) // STAT_LINES
 STAT_PAD = 16
 
@@ -84,34 +87,36 @@ CAMBIOS = {
 # equipment screen
 "LYT_HUIHQWEAPONSELECT.SGO": [
     ("2.2.0", n(OFFSCREEN)),
-    ("10.1", FLAT),
+    ("10.1", PANEL),
     ("10.2.0", n(LIST_X)),
     ("10.2.1", n(DESC_PANEL_Y)),
     ("10.3.2", n(LIST_W)),
     ("10.3.3", n(DESC_PANEL_H)),
     ("10.5", "0"),
     ("10.6", "0"),
-    ("40.1", FLAT),
+    ("40.1", PANEL),
     ("40.2.0", n(LIST_X)),
     ("40.2.1", n(CONTENT_TOP)),
     ("40.3.2", n(LIST_W)),
     ("40.3.3", n(LIST_H)),
-    ("26.2.0", n(LIST_PAD)),
-    ("26.2.1", n(HEADER_Y)),
+    ("26.2.0", n(LIST_PAD - PANEL_MARGIN)),
+    ("26.2.1", n(HEADER_Y - PANEL_MARGIN)),
     ("26.3.2", n(GRID_W)),
     ("26.3.3", n(HEADER_H)),
-    ("36.2.0", n(LIST_PAD)),
-    ("36.2.1", n(GRID_Y)),
+    ("36.2.0", n(LIST_PAD - PANEL_MARGIN)),
+    ("36.2.1", n(GRID_Y - PANEL_MARGIN)),
     ("36.3.2", n(GRID_W)),
     ("36.3.3", n(GRID_H)),
     ("36.7.0.1.0", "0"),
     ("36.7.0.1.2", "0"),
-    ("6.1.0.1.0", n(LIST_PAD + GRID_W + 3)),
-    ("6.1.0.1.1", n(GRID_Y)),
+    ("6.1.0.1.0", n(LIST_PAD + GRID_W + 3 - PANEL_MARGIN)),
+    ("6.1.0.1.1", n(GRID_Y - PANEL_MARGIN)),
     ("6.1.1.1.3", n(GRID_H)),
-    ("19.1.0.1.0", n(LIST_PAD)),
-    ("19.1.0.1.1", n(UNDER_BAR_Y)),
+    ("19.1.0.1.0", n(LIST_PAD - PANEL_MARGIN)),
+    ("19.1.0.1.1", n(UNDER_BAR_Y - PANEL_MARGIN)),
+    ("19.1.1.1.2", n(BAR_THICKNESS)),
     ("19.1.1.1.3", n(GRID_W)),
+    ("20.1.1.1.2", n(BAR_THICKNESS)),
     ("21.3.2", n(COLUMN_W)),
     ("21.3.3", n(GRID_H)),
     ("21.7.1.1.1", n(ROW_H)),
@@ -138,7 +143,7 @@ CAMBIOS = {
     ("30.3.3", n(TITLE_H)),
     ("30.7.1.1.0", "28"),
     ("30.7.1.1.1", "28"),
-    ("27.1", FLAT),
+    ("27.1", PANEL),
     ("27.2.0", n(PANEL_X)),
     ("27.2.1", n(CONTENT_TOP)),
     ("27.3.2", n(PANEL_W)),

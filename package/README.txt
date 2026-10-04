@@ -9,7 +9,8 @@ you can install just one if you want.
    columns, 13 visible rows, full names and a highlight that covers the whole
    row. The weapon's name and description go below it, and the stats get their
    own panel on the right, above the class box, so nothing overlaps. The panels
-   are flat, so the screen looks the same on every mission-era background.
+   use one of the game's thin-bordered windows, so the layout holds on every
+   mission-era background.
 
    A small patch, Mods\Patches\EDF6UI_EquipmentScreen.txt, changes two sizes
    the game hard-codes: the selection highlight (355 px) and the room for item

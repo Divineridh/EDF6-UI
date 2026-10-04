@@ -48,7 +48,7 @@ BaseFrame
         WeaponDescArea
             WeaponDesc
         WeaponDescParam
-            WeaponDescParamLine  <- runtime: 12 copies
+            WeaponDescParamLine  <- plus 12 runtime copies: 13 stat lines
         TextUpButton
         TextDownButton
     DescSeparatorLine
@@ -103,6 +103,11 @@ BaseFrame
 - The mouse wheel scrolls freely: `+8B9380` adds `delta * 1000 / content height` to a 0-1 scroll
   ratio, so wheel scrolling stops between rows no matter what the layout says. All columns share the
   same vertical scroll, sized from the longest column.
+- The horizontal scroll bar (UnderScrollBarBase) is the vertical template rotated -90 degrees around
+  its `pos`, so it occupies `[pos.y - thickness, pos.y]` (area w is the thickness, area h the length).
+  Clicks are tested against that whole area (`+969060` uses the node's matrix and area), which is
+  thicker than the line the skin draws. Pressing inside it grabs the bar, so the area needs clearance
+  from the last row: with no gap, clicking the last item scrolled the columns.
 - Panel7_WeaponSelect_skin is the first child of BaseFrame, so it's drawn below everything. With
   `hcoord = vcoord = 0` it's positioned by its top-left corner like the rest, which makes it the
   background of the description: the weapon name and a padded, clipped text area both sit on top.
@@ -117,6 +122,11 @@ A skin SGO is `[base sgo, states..., class]`. The class decides how it fills the
 | `Window` | textured mesh with four corner bones | minimum size per skin | geometry may change |
 | `Button` | textured mesh with `left`/`right` bones | minimum width, fixed height | geometry may change |
 | `Model` / `Texture` | not stretched | fixed | |
+
+A skin can also declare content margins `[left, top, right, bottom]` (Window_Test01 has 24 on every
+side, Window09_Common 8/17/12/0, the Window06/07 skins none). The node's children are positioned
+from that inner box, so switching to a skin with margins moves everything inside the node: seen in
+game when the item list took Window_Test01 and its header, grid and scroll bars shifted 24 px.
 
 A `Window` skin is a 3D model (`MDB0`) plus DDS textures inside `<NAME>_MERGE.rab` (an SSA archive whose
 entries are CMPL-compressed). Every vertex is bound to one of the bones `LT`, `LB`, `RT`, `RB`, and the
@@ -171,7 +181,7 @@ pieces are 218 and 190 px.
 
 | what | where | effect |
 |------|-------|--------|
-| 12 stat lines | `+8B54AF` (`mov r8d, 0xC`), loop at `+8B64C1` | a weapon never shows more than 12 stats |
+| 12 stat lines created | `+8B54AF` (`mov r8d, 0xC`), loop at `+8B64C1` | with the line that's already in `layout_tree`, a weapon shows at most 13 stats (seen in game) |
 | cursor 355 x 40 | `+8BB68A`, `+8BB699`, on every selection move | the highlight ignores the cell size |
 | name width 250 | `+8B59B9` (headers), `+8B5B81` (items) | longer names are squeezed, whatever the cell width |
 | `this+0xE4F0 >= 6`, `this+0xE5D8 = count * 40` | `+8B6532`, `+8B654C` | E4F0 is the item count of the longest column: 6 or more turns vertical scrolling on, and its height is taken as 40 px per item. With 40 px rows the longest column reaches its last item (checked in game) |
@@ -205,10 +215,12 @@ ItemNameWidth+6: <float32>
 1. Every box is at least its skin's minimum size **in both families**, and its overflow lands somewhere
    harmless. Otherwise use a skin with the same geometry in every era: `Solid`, Window10_NoFrame,
    Window04, Window05.
+   The panels use Window_Test01: a dark fill with a thin border, minimum 317 x 62 (base) and
+   126 x 96 (B/C), only 4 px of overflow, loaded in the HQ, and already in the layout's string table.
 2. Know what a node is before reusing it (`tools/lyt.py`), and mind the draw order. A hidden text field
    with a `Solid` skin is a plain rectangle, which is how WeaponLevel became the stats background;
    the same field with a `Window` skin was the dark block. WindowLower stays a transparent container.
-3. Stat lines: `pos.y = area.y = 0`, pitch = `area.h`, 12 lines at most. Item rows stay at 40 px,
+3. Stat lines: `pos.y = area.y = 0`, pitch = `area.h`, 13 lines at most. Item rows stay at 40 px,
    the height EDF.dll uses to size the vertical scroll.
 4. A column width other than 355 needs the EDF.dll patch (cursor and name width).
 5. Keep the main frame's title and help line zones free in both families.
@@ -221,6 +233,7 @@ python tools/lyt.py <file.sgo>              # nodes with names, flags, hcoord/vc
 python tools/rab.py <file.rab> [dest]       # list or extract an SSA archive (CMPL)
 python tools/mdb.py <file.mdb>              # bones, textures and skinned vertices of a model
 python tools/skins.py [filter...]           # minimum size and overflow per skin and era family
+python tools/skinview.py <SKIN> <w> <h> <dest>  # render a skin at a given size for base, B and C
 ```
 
 CMPL is LZSS with a 4096-byte window starting at 0xFEE, LSB-first flag bits, and a 12-bit offset made of
