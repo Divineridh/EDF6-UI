@@ -139,8 +139,8 @@ and travels with that corner, so:
 
 The merge model holds one object per era: `X_mesh` (base), `X_mesh.B` and `X_mesh.c`. B and C always
 share the geometry and only swap the texture, so there are **two geometry families**: base (the blue
-era) and B/C (the green, beige and violet eras). That's why a layout tuned in one family breaks in the
-other.
+era) and B/C (the green, beige and violet eras; C is the green one). That's why a layout tuned in one
+family breaks in the other.
 
 `python tools/skins.py [filter...]` prints, per skin and family, the minimum size, how far it reaches
 outside its area, and whether it's loaded in the HQ:
@@ -189,9 +189,34 @@ Two things that hadn't been tried before work in game:
 
 `tools/panelskin.py` clones a game skin under a new name (skin SGO, base SGO and `_MERGE.rab`) and
 repaints its textures; the mesh, margins and per-era geometry stay the game's. The panels clone
-Window_Test01 and the class box clones Window05_SoldierInfo, SoldierInfo_Name and SoldierInfo_Data,
-all in the handoff's palette. `rab.py` writes the repainted textures as literal-only CMPL, which any
-LZSS decoder reads, about 12% bigger than raw.
+Window_Test01 and the class box clones Window05_SoldierInfo, SoldierInfo_Name and SoldierInfo_Data.
+`rab.py` writes the repainted textures as literal-only CMPL, which any LZSS decoder reads, about 12%
+bigger than raw.
+
+### Colors per era
+
+Each mesh variant (`X_mesh`, `.B`, `.c`) has its own material, and the game picks the variant by era.
+Checked in game by painting the three variants red, yellow and magenta: **base is the blue era and C
+the green one**, and B serves both the beige and the violet eras (checked in both). So there can be
+three palettes, and the recipes in `panelskin.py` take one: navy for base, the original green for C
+and a desaturated plum grey for B. B needs to be neutral: a violet palette looked pink in game and
+clashed with the beige background, which is also why the game's own B textures are a greyish
+lavender. The orange accent is a `Solid` skin, one color for every era.
+
+Most skins already have one texture per variant (Window_Test01: `Palette01`, `edf6_window01.B`,
+`edf6_window01`; the `_b` / `_c` ones elsewhere). Window05_SoldierInfo doesn't: its six materials
+point at two files shared by every variant. To split it, `panelskin.py`:
+
+- adds four textures to the archive. `rab.write` rebuilds an SSA file from scratch and reproduces 393
+  of the 396 UI archives in `Root.cpk` byte for byte. Layout: a 0x28 header (`SSA\0`, 0x110, data
+  start, biggest block, biggest payload, count, entry table, sorted index, folder count, folder
+  table), 0x20-byte entries (name, size, folder, offset), an index of (name, entry) sorted by name,
+  the folder table (`TEXTURE` = 0, `MODEL` = 1) and every string in one block sorted by name, then
+  the CMPL blocks;
+- re-points the texture entries of the B and C variants in the MDB (file name at entry + 8, relative
+  to the entry) to strings the model already has (`Window5_SoldierInfo_frame_dds`,
+  `Window5_SoldierInfo_frame`, ...), and the B materials (texture index at material + its ref offset)
+  to the two entries nothing used. File names without `.dds` load fine.
 
 The HQ keeps its layouts in memory: reopening the equipment screen re-reads skins but not layouts,
 so a layout change needs a game restart (or leaving the HQ) to show.

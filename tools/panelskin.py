@@ -1,10 +1,12 @@
 import os
 import struct
 import sys
+from collections import namedtuple
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from cpk import Cpk
+from mdb import Mdb
 from patch import load
 from rab import members, rebuild
 
@@ -12,12 +14,17 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GAME = r"C:\Descargas Pesadas\EARTH DEFENSE FORCE 6\EARTH DEFENSE FORCE 6"
 SOURCE = os.path.join(ROOT, "extract", "UI")
 
-FILL = (5, 14, 10)
+Palette = namedtuple("Palette", "fill border accent name_row data_row")
+
+GREEN = Palette((5, 14, 10), (47, 107, 74), (95, 163, 124), (25, 62, 42), (12, 32, 22))
+BLUE = Palette((5, 10, 18), (47, 82, 122), (100, 140, 196), (24, 44, 74), (11, 22, 38))
+PLUM_GREY = Palette((11, 10, 13), (78, 72, 86), (138, 130, 150), (40, 36, 46), (20, 18, 24))
+
+BLUE_ERA = BLUE
+B_ERAS = PLUM_GREY
+C_ERAS = GREEN
+
 FILL_ALPHA = 224
-BORDER = (47, 107, 74)
-ACCENT = (95, 163, 124)
-NAME_ROW = (25, 62, 42)
-DATA_ROW = (12, 32, 22)
 TAB_ALPHA = 204
 ACCENT_SELECTION = (255, 138, 31, 235)
 
@@ -83,19 +90,56 @@ def pixels(paint):
     return lambda dds: recolor(dds, paint)
 
 
+def panel(palette, dark, mid, light, fill_alpha):
+    return pixels(ramp(((dark, palette.fill), (mid, palette.border), (light, palette.accent)), fill_alpha))
+
+
+def per_variant(texture, paint):
+    stem, extension = texture.rsplit(".", 1)
+    return {
+        "%s.%s" % (stem, extension): paint(BLUE_ERA),
+        "%s_b.%s" % (stem, extension): paint(B_ERAS),
+        "%s_c.%s" % (stem, extension): paint(C_ERAS),
+    }
+
+
+def class_window(palette):
+    return pixels(flat(palette.fill, palette.border, {127: FILL_ALPHA}))
+
+
+def class_frame(palette):
+    return pixels(gradient(palette.border, palette.accent))
+
+
+Split = namedtuple("Split", "materials files")
+
+SPLITS = {
+    "EDF6UI_ClassBox": Split(
+        materials={2: 2, 3: 3},
+        files={
+            2: ("Window5_SoldierInfo_frame_dds", "window5_soldierinfo_frame.dds", class_frame(B_ERAS)),
+            3: ("Window5_SoldierInfo_window_dds", "window5_soldierinfo_window.dds", class_window(B_ERAS)),
+            4: ("Window5_SoldierInfo_frame", "window5_soldierinfo_frame.dds", class_frame(C_ERAS)),
+            5: ("Window5_SoldierInfo_window", "window5_soldierinfo_window.dds", class_window(C_ERAS)),
+        }),
+}
+
 CLONES = [
     ("WINDOW_TEST01", "EDF6UI_Panel", {
-        "palette01.dds": pixels(ramp(((19.5, FILL), (171.7, BORDER), (248.0, ACCENT)), 171)),
-        "edf6_window01.dds": pixels(ramp(((14.2, FILL), (104.1, BORDER), (192.0, ACCENT)), 177)),
-        "edf6_window01.b.dds": pixels(ramp(((0.0, FILL), (130.2, BORDER), (192.0, ACCENT)), 177)),
+        "palette01.dds": panel(BLUE_ERA, 19.5, 171.7, 248.0, 171),
+        "edf6_window01.b.dds": panel(B_ERAS, 0.0, 130.2, 192.0, 177),
+        "edf6_window01.dds": panel(C_ERAS, 14.2, 104.1, 192.0, 177),
     }),
     ("WINDOW05_SOLDIERINFO", "EDF6UI_ClassBox", {
-        "window5_soldierinfo_window.dds": pixels(flat(FILL, BORDER, {127: FILL_ALPHA})),
-        "window5_soldierinfo_frame.dds": pixels(gradient(BORDER, ACCENT)),
+        "window5_soldierinfo_window.dds": class_window(BLUE_ERA),
+        "window5_soldierinfo_frame.dds": class_frame(BLUE_ERA),
     }),
-    ("SOLDIERINFO_NAME", "EDF6UI_ClassName", {"*": pixels(flat(NAME_ROW, ACCENT))}),
-    ("SOLDIERINFO_DATA", "EDF6UI_ClassData", {"*": pixels(flat(DATA_ROW, BORDER))}),
-    ("WEAPONSEL_INDEXBASE", "EDF6UI_Tab", {"*": framed(BORDER, FILL, TAB_ALPHA)}),
+    ("SOLDIERINFO_NAME", "EDF6UI_ClassName", per_variant(
+        "window5_soldierinfo_textbase1.dds", lambda p: pixels(flat(p.name_row, p.accent)))),
+    ("SOLDIERINFO_DATA", "EDF6UI_ClassData", per_variant(
+        "window5_soldierinfo_textbase2.dds", lambda p: pixels(flat(p.data_row, p.border)))),
+    ("WEAPONSEL_INDEXBASE", "EDF6UI_Tab", per_variant(
+        "weaponsel_indexbase01.dds", lambda p: framed(p.border, p.fill, TAB_ALPHA))),
 ]
 
 SOLIDS = [
@@ -123,17 +167,42 @@ def recolor(dds, paint):
     return bytes(out)
 
 
+def retarget(model, split):
+    out = bytearray(model)
+    parsed = Mdb(model)
+    textures_off = struct.unpack_from("<I", model, 0x2C)[0]
+    for material, texture in split.materials.items():
+        record = parsed.material_off + material * 32
+        refs = struct.unpack_from("<I", model, record + 20)[0]
+        struct.pack_into("<I", out, record + refs, texture)
+    for texture, (file, _, _) in split.files.items():
+        encoded = b"\0\0" + file.encode("utf-16le") + b"\0\0"
+        found = model.find(encoded)
+        if found < 0 or found % 2 or model.find(encoded, found + 2) >= 0:
+            raise SystemExit("no single string %r in the model" % file)
+        entry = textures_off + texture * 16
+        struct.pack_into("<I", out, entry + 8, found + 2 - entry)
+    return bytes(out)
+
+
 def clone(cpk, files, source, name, recipe, dest):
     skin = load(os.path.join(SOURCE, source + "_SKIN.SGO"))
     base = load(os.path.join(SOURCE, source + ".SGO"))
     archive_path = base.text_at("0.0.0.0")
     archive = cpk.read(files["UI/" + archive_path.split("/")[-1].upper()])
+    originals = members(archive)
     textures = {}
-    for member, data in members(archive).items():
+    for member, data in originals.items():
         paint = recipe.get(member) or recipe.get("*")
         if member.endswith(".dds") and paint:
             textures[member] = paint(data)
-    outputs = [(name.upper() + "_MERGE.RAB", rebuild(archive, textures))]
+    additions = []
+    split = SPLITS.get(name)
+    if split:
+        additions = [(file, paint(originals[member])) for file, member, paint in split.files.values()]
+        model = next(member for member in originals if member.endswith(".mdb"))
+        textures[model] = retarget(originals[model], split)
+    outputs = [(name.upper() + "_MERGE.RAB", rebuild(archive, textures, additions))]
     base.repoint("0.0.0.0", "app:/UI/%s_merge.rab" % name, add=True)
     outputs.append((name.upper() + ".SGO", bytes(base.buf)))
     skin.repoint("0", "app:/UI/%s.sgo" % name, add=True)
