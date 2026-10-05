@@ -4,14 +4,21 @@ EDF6 UI Mod  (pre-release)
 Two changes to Earth Defense Force 6's interface, independent of each other:
 you can install just one if you want.
 
-1) Redesigned equipment screen  (Mods\UI and Mods\Patches)
+1) Redesigned equipment screen  (Mods\UI, Mods\Patches and Mods\Plugins)
    The item list sits on the left: two categories side by side in wide
-   columns, 13 visible rows, full names and a highlight that covers the whole
+   columns, 12 visible rows, full names and a highlight that covers the whole
    row. The weapon's name and description go below it, and the stats get their
    own panel on the right, above the class box, so nothing overlaps. The panels
    and the class box use the mod's own dark green palette, built on one of the
    game's thin-bordered windows, so the layout holds on every mission-era
    background.
+
+   Above the list, a tab for every category with its item count jumps
+   straight to it: click a tab, or press Q / E to go to the previous / next
+   category (same as the arrow keys). The active category is orange, the
+   other one on screen is underlined, and "<- 2 / 11 ->" tells where you
+   are. The tabs come from Mods\Plugins\EDF6UITabs.dll; without it the
+   screen works as before, with an empty band where the tabs go.
 
    A small patch, Mods\Patches\EDF6UI_EquipmentScreen.txt, changes two sizes
    the game hard-codes: the selection highlight (355 px) and the room for item
@@ -38,7 +45,9 @@ This is a pre-release. On the equipment screen:
   - scrolling the item list with the mouse wheel can stop between rows,
     because the game scrolls freely with the wheel. The keyboard keeps whole
     rows;
-  - the longest names are slightly squeezed to fit their column.
+  - the longest names are slightly squeezed to fit their column;
+  - empty categories look like the others in the tabs, and clicking one
+    does nothing (the game never selects an empty category).
 
 
 REQUIREMENT
@@ -49,7 +58,10 @@ winmm.dll and no Mods folder, nothing happens.
     https://github.com/BlueAmulet/EDFModLoader
 
 The patch also needs EDFModLoader's Patcher plugin (Mods\Plugins\Patcher.dll),
-which applies the files in Mods\Patches when the game starts.
+which applies the files in Mods\Patches when the game starts. The tabs plugin
+is loaded by EDFModLoader itself and writes EDF6UI.log next to EDF6.exe; if
+the game is updated and the plugin no longer recognizes it, it says so there
+and does nothing.
 
 
 INSTALL
@@ -62,6 +74,7 @@ EDF6.exe. It ends up like this:
     EARTH DEFENSE FORCE 6\Mods\UI\LYT_HUIHQCURRENTSTATUS.SGO
     EARTH DEFENSE FORCE 6\Mods\UI\EDF6UI_*.SGO and EDF6UI_*.RAB (the skins)
     EARTH DEFENSE FORCE 6\Mods\Patches\EDF6UI_EquipmentScreen.txt
+    EARTH DEFENSE FORCE 6\Mods\Plugins\EDF6UITabs.dll
     EARTH DEFENSE FORCE 6\Mods\WEAPON\WEAPONTEXT.EN.SGO
 
 To revert, delete those files. Root.cpk is never touched. Restart the game

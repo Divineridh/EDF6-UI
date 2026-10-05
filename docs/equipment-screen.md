@@ -220,6 +220,78 @@ aob ItemNameWidth C786B801000000007A434885DB74
 ItemNameWidth+6: <float32>
 ```
 
+## Category tabs (the EDF6UITabs plugin)
+
+A layout can't add input handling or new nodes, so the tabs are a C++ plugin for EDFModLoader
+(`plugin/`, MinHook, no overlay). It builds the tabs out of the screen's own templates, so they use
+the game's font, skins and fades. Everything below is from `EDF.dll` and checked in game unless it
+says otherwise.
+
+### HUiHQWeaponSelect
+
+| address | what it is |
+|---------|------------|
+| `+8B4280` | constructor (`this`, 0xE640 bytes, created every time the screen opens): instantiates the headers, columns and cells. The plugin hooks it and adds its nodes afterwards |
+| `+8BAB90` | per-frame update (vtable). Reads the menu actions of the player's input record (`ctx+8`, byte at `+0xDC0 + 0xDD0*i` or `+0x4528`): bit 1 up, 2 down, 4 left, 8 right |
+| `+8BA240` | move column (`this`, 0 = left, 1 = right). Clamps to the ends, **skips empty columns**, clamps the row to the new column, plays the cursor sound. Its only caller is the update |
+| `+8B9380` | mouse-wheel scroll, called by the update only after its "screen accepts input" checks. The plugin hooks it as its per-frame input point |
+| `+8BB4B0` | select a weapon by id (finds column and row) |
+
+| field | content |
+|-------|---------|
+| `+0x7D8` | `std::wstring[]` category names (begin, end at `+0x7E0`) |
+| `+0xE4E8` | category count |
+| `+0xE500` / `+0xE510` | column array (0x20 bytes each: items at `+8`, item count at `+0x18`; items are 0x90 bytes, weapon id first) and column count |
+| `+0xE548` / `+0xE54C` | current column / selected row |
+| `+0xE550` | `vector<int>` node ids of the columns |
+
+### UI framework helpers
+
+| address | signature |
+|---------|-----------|
+| `+8454B0` | `instantiate(screen, shared_ptr* out, parent name, template name)`: creates a template as a child of a named node |
+| `+839FD0` | `find(screen, shared_ptr* out, const wstring& name)`: first node with that name |
+| `+839560` | node by id (the ids `+839830` returns for a name) |
+| `+83B880` | set the text of a `HUiButton` (`const wstring*`) |
+| `+7F8BB0` | set the text of a `TextField` (`const wchar_t*`, 0) |
+| `+12DA7AA` | `__RTDynamicCast`; type descriptors `Component` `+2062F00`, `TextField` `+2062F28`, `HUiButton` `+2062F50` |
+
+All of them return strong `shared_ptr`s (MSVC layout; release with the control block's vtable 0 and
+1, as the game's inlined code does). Instantiated nodes are owned by their parent, so releasing the
+returned reference right away is safe; the tree frees them when the screen closes.
+
+Node fields: `+0x1A0` position (x, y, z, 1), `+0x1B0` area (x, y, w, h), `+0x1F0` / `+0x1F4` hcoord /
+vcoord. The game writes position and size at runtime (the selection cursor, the name width), and so
+can a plugin. A button's text is a `TextField` held by a weak pointer at `+0x220`; its `+0x1B8` is the
+width the text is squeezed into. `WeaponSelectArea+0x210` is the horizontal scroll (negative, animated);
+column `i` sits at `i * column width` inside it.
+
+**Don't write the font parameters.** The property parser (`+84D5F0`) stores `font_size` at `+0x10C` and
+`font_color` at `+0x130` of a temporary parameter block, not of the node. In the node those offsets
+are pointers: writing a color there crashed the game when the screen closed (`+7E9026`, inside a node
+destructor). The real font scale ends up at `+0x278` of the text field; the color wasn't found.
+
+### What the plugin builds
+
+Created under `BaseFrame` after the constructor, in this order (later ones draw on top):
+
+1. one `WeaponSel_IndexBase` per category, with name and item count, in two rows from the left edge
+   of the list to the right edge of the stats panel. Widths follow the text (about 0.53 x the font
+   size per character for this font) and each row is stretched to full width;
+2. the same template once more for the `← 2 / 11 →` indicator, at the end of the second row;
+3. one `SelectCursor` per category: a 3 px bar under the tabs whose column is on screen;
+4. one more `SelectCursor` over the active tab, and a `WeaponLevelIndex` text field on top of it with
+   the active tab's name (the tab's own text is emptied while active so it doesn't show through).
+
+The row positions come from `WindowUpper` and `WeaponLevel`, so the layout stays the only source of
+geometry. Q / E call the move-column function; a click on a tab calls it until the column matches
+(clicking an empty category does nothing, since the game never leaves one active).
+
+Two skins make the templates work as tabs: `EDF6UI_Tab` (a clone of WeaponSel_IndexBase whose
+textures are regenerated as one bordered box, without the Lv / ☆ cells; the column headers share it)
+and `EDF6UI_Accent`, a `Solid` skin (`[Color [r, g, b, a], mergin, object_class]`, copied from
+ScrollBar_guide) that `SelectCursor` uses, so the list's selected row is the handoff's flat orange.
+
 ## How the earlier iterations failed
 
 - `0aae41b` turned `WeaponLevel` (27), a text field, into the stats background with Window07: the 738 px
@@ -254,6 +326,7 @@ python tools/mdb.py <file.mdb>              # bones, textures and skinned vertic
 python tools/skins.py [filter...]           # minimum size and overflow per skin and era family
 python tools/skinview.py <SKIN> <w> <h> <dest>  # render a skin at a given size for base, B and C
 python tools/panelskin.py [dest]               # build the mod's recolored skins
+plugin/build.bat                                # build the category tabs plugin (EDF6UITabs.dll)
 ```
 
 CMPL is LZSS with a 4096-byte window starting at 0xFEE, LSB-first flag bits, and a 12-bit offset made of

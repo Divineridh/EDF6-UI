@@ -173,6 +173,8 @@ others, and what `EDF.dll` hard-codes. The short version:
   draws a 534 px line past its right edge in B/C).
 - `EDF.dll` creates 12 stat lines (13 with the one in the layout), a 355 x 40 selection cursor and a
   250 px width for item and category names. The last two can be patched with `Mods\Patches`.
+- The category tabs are a plugin (`plugin/`) that hooks `HUiHQWeaponSelect`, instantiates the
+  screen's own templates as tabs and calls the game's move-column function for Q / E and clicks.
 
 ## Rebuilding the mod
 
@@ -180,7 +182,15 @@ others, and what `EDF.dll` hard-codes. The short version:
 python tools/gen_layout.py    # the three layouts from extract/UI/, and the EDF.dll patch
 python tools/weapons.py       # weapon catalog
 python tools/weapon_notes.py  # notes at the start of the description (--vanilla for a release)
+plugin/build.bat              # category tabs plugin -> plugin/build/EDF6UITabs.dll
 python tools/package.py       # zip in ../builds/
+```
+
+The plugin needs the VS2019 Build Tools (MSVC 14.29) and two dependencies that aren't in the repo:
+
+```bash
+git clone https://github.com/TsudaKageyu/minhook    plugin/deps/minhook
+git clone https://github.com/Quarri6343/EDF6Plugins plugin/deps/EDF6Plugins
 ```
 
 `gen_layout.py` has the full list of edited values per node, and reproduces the three files byte by
@@ -193,7 +203,9 @@ from a few constants at the top (column width, rows, panel sizes), and the patch
 ```bash
 cp -r "C:/ModsCaseros/EDF6-UI/build/UI" "C:/Descargas Pesadas/EARTH DEFENSE FORCE 6/EARTH DEFENSE FORCE 6/Mods/"
 cp "C:/ModsCaseros/EDF6-UI/build/Patches/EDF6UI_EquipmentScreen.txt" "C:/Descargas Pesadas/EARTH DEFENSE FORCE 6/EARTH DEFENSE FORCE 6/Mods/Patches/"
+cp "C:/ModsCaseros/EDF6-UI/plugin/build/EDF6UITabs.dll" "C:/Descargas Pesadas/EARTH DEFENSE FORCE 6/EARTH DEFENSE FORCE 6/Mods/Plugins/"
 ```
 
-The patch needs EDFModLoader's `Patcher` plugin and is applied when the game starts. To revert,
-delete the files from `Mods\UI\` and `Mods\Patches\`. `Root.cpk` is never touched.
+The patch needs EDFModLoader's `Patcher` plugin and is applied when the game starts. The tabs
+plugin writes `EDF6UI.log` next to `EDF6.exe`. To revert, delete the files from `Mods\UI\`,
+`Mods\Patches\` and `Mods\Plugins\`. `Root.cpk` is never touched.
