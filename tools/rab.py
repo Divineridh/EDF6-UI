@@ -72,31 +72,78 @@ def cmpl_literal(payload):
     return bytes(out)
 
 
-def rebuild(data, replacements):
+SSA_VERSION = 0x110
+ENTRY_SIZE = 0x20
+INDEX_SIZE = 8
+FOLDER_NAMES = ("MODEL", "TEXTURE")
+FOLDER_ORDER = ("TEXTURE", "MODEL")
+TEXTURE_FOLDER = FOLDER_ORDER.index("TEXTURE")
+HEADER_SIZE = 0x28
+
+
+def wide(text):
+    return text.encode("utf-16le") + b"\0\0"
+
+
+def stored(data):
     count, table = struct.unpack_from("<II", data, 0x14)
-    entries = []
+    found = []
     for i in range(count):
-        entry = table + i * 0x20
-        name_rel, size, _, _, _, _, offset, _ = struct.unpack_from("<8I", data, entry)
+        entry = table + i * ENTRY_SIZE
+        name_rel, size, folder, _, _, _, offset, _ = struct.unpack_from("<8I", data, entry)
         e = entry + name_rel
         while data[e:e + 2] != b"\0\0":
             e += 2
-        name = data[entry + name_rel:e].decode("utf-16le").lower()
-        entries.append((entry, name, data[offset:offset + size]))
-    start = min(struct.unpack_from("<I", data, entry + 24)[0] for entry, _, _ in entries)
-    out = bytearray(data[:start])
+        found.append((data[entry + name_rel:e].decode("utf-16le"), folder, data[offset:offset + size]))
+    return found
+
+
+def write(archive):
+    count = len(archive)
+    table = HEADER_SIZE
+    index = table + count * ENTRY_SIZE
+    folders = index + count * INDEX_SIZE
+    strings = folders + 4 * len(FOLDER_ORDER)
+    order = sorted(range(count), key=lambda i: archive[i][0])
+    text = b""
+    string_at = {}
+    for string in sorted(set(FOLDER_NAMES) | {name for name, _, _ in archive}):
+        string_at[string] = strings + len(text)
+        text += wide(string)
+    folder_at = {folder: string_at[folder] for folder in FOLDER_NAMES}
+    name_at = {i: string_at[archive[i][0]] for i in range(count)}
+    data_start = strings + len(text)
+    out = bytearray(data_start)
+    out[strings:data_start] = text
+    for rank, i in enumerate(order):
+        record = index + rank * INDEX_SIZE
+        struct.pack_into("<II", out, record, name_at[i] - record, i)
+    for slot, folder in enumerate(FOLDER_ORDER):
+        record = folders + 4 * slot
+        struct.pack_into("<I", out, record, folder_at[folder] - record)
     biggest_block = biggest_payload = 0
-    for entry, name, block in entries:
-        if name in replacements:
-            block = cmpl_literal(replacements[name])
-        payload_size = struct.unpack_from(">I", block, 4)[0] if block[:4] == b"CMPL" else len(block)
-        struct.pack_into("<I", out, entry + 4, len(block))
-        struct.pack_into("<I", out, entry + 24, len(out))
+    for i, (name, folder, block) in enumerate(archive):
+        entry = table + i * ENTRY_SIZE
+        struct.pack_into("<8I", out, entry, name_at[i] - entry, len(block), folder, 0, 0, 0, len(out), 0)
         out += block
+        payload_size = struct.unpack_from(">I", block, 4)[0] if block[:4] == b"CMPL" else len(block)
         biggest_block = max(biggest_block, len(block))
         biggest_payload = max(biggest_payload, payload_size)
-    struct.pack_into("<II", out, 0x0C, biggest_block, biggest_payload)
+    struct.pack_into("<4s9I", out, 0, b"SSA\0", SSA_VERSION, data_start, biggest_block, biggest_payload, count,
+                     table, index, len(FOLDER_ORDER), folders)
     return bytes(out)
+
+
+def rebuild(data, replacements, additions=()):
+    archive = []
+    for name, folder, block in stored(data):
+        if name.lower() in replacements:
+            block = cmpl_literal(replacements[name.lower()])
+        archive.append((name, folder, block))
+    textures = [i for i, (_, folder, _) in enumerate(archive) if folder == TEXTURE_FOLDER]
+    insert_at = textures[-1] + 1 if textures else 0
+    added = [(name, TEXTURE_FOLDER, cmpl_literal(payload)) for name, payload in additions]
+    return write(archive[:insert_at] + added + archive[insert_at:])
 
 
 def kind(payload):

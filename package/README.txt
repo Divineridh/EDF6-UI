@@ -8,10 +8,11 @@ you can install just one if you want.
    The item list sits on the left: two categories side by side in wide
    columns, 12 visible rows, full names and a highlight that covers the whole
    row. The weapon's name and description go below it, and the stats get their
-   own panel on the right, above the class box, so nothing overlaps. The panels
-   and the class box use the mod's own dark green palette, built on one of the
+   own panel on the right, above the class box, so nothing overlaps. The panels,
+   tabs and class box use the mod's own dark palette, built on one of the
    game's thin-bordered windows, so the layout holds on every mission-era
-   background.
+   background. The palette follows the era: navy in the blue era, green in the
+   green one and violet in the others.
 
    Above the list, a tab for every category with its item count jumps
    straight to it: click a tab, or press Q / E to go to the previous / next
