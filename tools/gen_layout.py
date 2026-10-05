@@ -33,6 +33,12 @@ OFFSCREEN = -600
 CONTENT_TOP = 110
 CONTENT_BOTTOM = 958
 
+TABS_H = 39
+TABS_ROWS = 2
+TABS_ROW_GAP = 6
+TABS_GAP = 8
+LIST_Y = CONTENT_TOP + TABS_ROWS * TABS_H + (TABS_ROWS - 1) * TABS_ROW_GAP + TABS_GAP
+
 LIST_X = 40
 LIST_W = 1260
 LIST_PAD = 20
@@ -40,7 +46,7 @@ GRID_W = LIST_W - 2 * LIST_PAD
 COLUMNS = 2
 COLUMN_W = GRID_W // COLUMNS
 ROW_H = 40
-ROWS = 13
+ROWS = 12
 GRID_H = ROWS * ROW_H
 HEADER_Y = 14
 HEADER_H = 39
@@ -59,7 +65,7 @@ NAME_W = LEVEL_X - NAME_X - BADGE_W - 24
 BADGE_X = NAME_X + NAME_W + 5
 BADGE_Y = (ROW_H - BADGE_H) // 2
 
-DESC_PANEL_Y = CONTENT_TOP + LIST_H + 16
+DESC_PANEL_Y = LIST_Y + LIST_H + 16
 DESC_PANEL_H = CONTENT_BOTTOM - DESC_PANEL_Y
 DESC_PAD = 16
 TITLE_Y = DESC_PANEL_Y + 14
@@ -73,7 +79,7 @@ PANEL_W = 560
 CLASS_H = 289
 CLASS_Y = CONTENT_BOTTOM - CLASS_H
 CLASS_FRAME_OVERHANG = 26
-STATS_H = CLASS_Y - CLASS_FRAME_OVERHANG - 8 - CONTENT_TOP
+STATS_H = CLASS_Y - CLASS_FRAME_OVERHANG - 8 - LIST_Y
 STATS_PAD_TOP = 12
 STAT_LINES = 13
 STAT_PITCH = (STATS_H - 2 * STATS_PAD_TOP) // STAT_LINES
@@ -88,6 +94,7 @@ CAMBIOS = {
 # equipment screen
 "LYT_HUIHQWEAPONSELECT.SGO": [
     ("2.2.0", n(OFFSCREEN)),
+    ("16.1", "@+app:/UI/EDF6UI_Accent_skin.sgo"),
     ("10.1", PANEL),
     ("10.2.0", n(LIST_X)),
     ("10.2.1", n(DESC_PANEL_Y)),
@@ -97,7 +104,7 @@ CAMBIOS = {
     ("10.6", "0"),
     ("40.1", PANEL),
     ("40.2.0", n(LIST_X)),
-    ("40.2.1", n(CONTENT_TOP)),
+    ("40.2.1", n(LIST_Y)),
     ("40.3.2", n(LIST_W)),
     ("40.3.3", n(LIST_H)),
     ("26.2.0", n(LIST_PAD - PANEL_MARGIN)),
@@ -124,6 +131,7 @@ CAMBIOS = {
     ("21.7.1.1.3", n(ROW_H)),
     ("34.3.2", n(COLUMN_W)),
     ("34.3.3", n(ROW_H)),
+    ("35.1", "@+app:/UI/EDF6UI_Tab_skin.sgo"),
     ("35.3.2", n(COLUMN_W)),
     ("28.2.0", n(LEVEL_X)),
     ("29.2.0", n(LEVEL_X)),
@@ -146,7 +154,7 @@ CAMBIOS = {
     ("30.7.1.1.1", "28"),
     ("27.1", PANEL),
     ("27.2.0", n(PANEL_X)),
-    ("27.2.1", n(CONTENT_TOP)),
+    ("27.2.1", n(LIST_Y)),
     ("27.3.2", n(PANEL_W)),
     ("27.3.3", n(STATS_H)),
     ("27.7.1.1.0", "0"),
@@ -165,7 +173,7 @@ CAMBIOS = {
     ("17.2.0", n(OFFSCREEN)),
     ("18.2.0", n(OFFSCREEN)),
     ("24.2.0", n(PANEL_X)),
-    ("24.2.1", n(CONTENT_TOP + STATS_PAD_TOP)),
+    ("24.2.1", n(LIST_Y + STATS_PAD_TOP)),
     ("24.3.2", n(PANEL_W)),
     ("24.3.3", n(STATS_H - 2 * STATS_PAD_TOP)),
     ("25.2.0", n(STAT_PAD)),

@@ -1,5 +1,6 @@
-"""Builds ../builds/EDF6UIMod.zip from the rebuilt layouts, WEAPONTEXT and package/."""
+"""Builds ../builds/EDF6UIMod.zip from the rebuilt layouts, WEAPONTEXT, the tabs plugin and package/."""
 
+import glob
 import os
 import shutil
 import sys
@@ -13,6 +14,8 @@ SOURCE = os.path.join(ROOT, "package")
 STAGING = os.path.join(BUILD, "package")
 OUTPUT = os.path.join(os.path.dirname(ROOT), "builds")
 ZIP = os.path.join(OUTPUT, "EDF6UIMod.zip")
+PLUGIN_SOURCES = os.path.join(ROOT, "plugin", "src", "*")
+PLUGIN = os.path.join(ROOT, "plugin", "build", "EDF6UITabs.dll")
 
 CONTENTS = [
     (os.path.join(BUILD, "UI", "LYT_HUIHQWEAPONSELECT.SGO"),
@@ -25,6 +28,7 @@ CONTENTS = [
      "Mods/Patches/EDF6UI_EquipmentScreen.txt"),
     (os.path.join(BUILD, "WEAPON", "WEAPONTEXT.EN.SGO"),
      "Mods/WEAPON/WEAPONTEXT.EN.SGO"),
+    (PLUGIN, "Mods/Plugins/EDF6UITabs.dll"),
     (os.path.join(SOURCE, "README.txt"), "README.txt"),
 ]
 CONTENTS += [(os.path.join(BUILD, "UI", f), "Mods/UI/" + f) for f in panelskin.output_names()]
@@ -34,6 +38,9 @@ def main():
     missing = [src for src, _ in CONTENTS if not os.path.exists(src)]
     if missing:
         raise SystemExit("missing files for the package:\n  " + "\n  ".join(missing))
+    stale = [src for src in glob.glob(PLUGIN_SOURCES) if os.path.getmtime(src) > os.path.getmtime(PLUGIN)]
+    if stale:
+        raise SystemExit("the plugin is older than its sources, run plugin/build.bat:\n  " + "\n  ".join(stale))
 
     if os.path.exists(STAGING):
         shutil.rmtree(STAGING)

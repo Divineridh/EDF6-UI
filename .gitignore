@@ -6,3 +6,4 @@ extract/
 
 __pycache__/
 *.pyc
+plugin/deps/

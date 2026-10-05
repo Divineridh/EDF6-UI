@@ -18,6 +18,8 @@ BORDER = (47, 107, 74)
 ACCENT = (95, 163, 124)
 NAME_ROW = (25, 62, 42)
 DATA_ROW = (12, 32, 22)
+TAB_ALPHA = 204
+ACCENT_SELECTION = (255, 138, 31, 235)
 
 
 def luminance(r, g, b):
@@ -59,23 +61,51 @@ def flat(body, line, body_alpha=None):
     return paint
 
 
+def framed(border, fill, fill_alpha):
+    def paint(dds):
+        h, w = struct.unpack_from("<II", dds, 12)
+        levels = max(1, struct.unpack_from("<I", dds, 28)[0])
+        out = bytearray(dds)
+        offset = 128
+        for _ in range(levels):
+            for y in range(h):
+                for x in range(w):
+                    edge = x in (0, w - 1) or y in (0, h - 1)
+                    r, g, b = border if edge else fill
+                    out[offset:offset + 4] = bytes((b, g, r, 255 if edge else fill_alpha))
+                    offset += 4
+            w, h = max(1, w // 2), max(1, h // 2)
+        return bytes(out)
+    return paint
+
+
+def pixels(paint):
+    return lambda dds: recolor(dds, paint)
+
+
 CLONES = [
     ("WINDOW_TEST01", "EDF6UI_Panel", {
-        "palette01.dds": ramp(((19.5, FILL), (171.7, BORDER), (248.0, ACCENT)), 171),
-        "edf6_window01.dds": ramp(((14.2, FILL), (104.1, BORDER), (192.0, ACCENT)), 177),
-        "edf6_window01.b.dds": ramp(((0.0, FILL), (130.2, BORDER), (192.0, ACCENT)), 177),
+        "palette01.dds": pixels(ramp(((19.5, FILL), (171.7, BORDER), (248.0, ACCENT)), 171)),
+        "edf6_window01.dds": pixels(ramp(((14.2, FILL), (104.1, BORDER), (192.0, ACCENT)), 177)),
+        "edf6_window01.b.dds": pixels(ramp(((0.0, FILL), (130.2, BORDER), (192.0, ACCENT)), 177)),
     }),
     ("WINDOW05_SOLDIERINFO", "EDF6UI_ClassBox", {
-        "window5_soldierinfo_window.dds": flat(FILL, BORDER, {127: FILL_ALPHA}),
-        "window5_soldierinfo_frame.dds": gradient(BORDER, ACCENT),
+        "window5_soldierinfo_window.dds": pixels(flat(FILL, BORDER, {127: FILL_ALPHA})),
+        "window5_soldierinfo_frame.dds": pixels(gradient(BORDER, ACCENT)),
     }),
-    ("SOLDIERINFO_NAME", "EDF6UI_ClassName", {"*": flat(NAME_ROW, ACCENT)}),
-    ("SOLDIERINFO_DATA", "EDF6UI_ClassData", {"*": flat(DATA_ROW, BORDER)}),
+    ("SOLDIERINFO_NAME", "EDF6UI_ClassName", {"*": pixels(flat(NAME_ROW, ACCENT))}),
+    ("SOLDIERINFO_DATA", "EDF6UI_ClassData", {"*": pixels(flat(DATA_ROW, BORDER))}),
+    ("WEAPONSEL_INDEXBASE", "EDF6UI_Tab", {"*": framed(BORDER, FILL, TAB_ALPHA)}),
+]
+
+SOLIDS = [
+    ("SCROLLBAR_GUIDE", "EDF6UI_Accent", ACCENT_SELECTION),
 ]
 
 
 def output_names():
-    return [name.upper() + suffix for _, name, _ in CLONES for suffix in ("_MERGE.RAB", ".SGO", "_SKIN.SGO")]
+    return ([name.upper() + suffix for _, name, _ in CLONES for suffix in ("_MERGE.RAB", ".SGO", "_SKIN.SGO")] +
+            [name.upper() + "_SKIN.SGO" for _, name, _ in SOLIDS])
 
 
 def recolor(dds, paint):
@@ -102,7 +132,7 @@ def clone(cpk, files, source, name, recipe, dest):
     for member, data in members(archive).items():
         paint = recipe.get(member) or recipe.get("*")
         if member.endswith(".dds") and paint:
-            textures[member] = recolor(data, paint)
+            textures[member] = paint(data)
     outputs = [(name.upper() + "_MERGE.RAB", rebuild(archive, textures))]
     base.repoint("0.0.0.0", "app:/UI/%s_merge.rab" % name, add=True)
     outputs.append((name.upper() + ".SGO", bytes(base.buf)))
@@ -113,12 +143,23 @@ def clone(cpk, files, source, name, recipe, dest):
     return [filename for filename, _ in outputs]
 
 
+def solid(source, name, rgba, dest):
+    skin = load(os.path.join(SOURCE, source + "_SKIN.SGO"))
+    for channel, value in enumerate(rgba):
+        skin.set("0.%d" % channel, value)
+    filename = name.upper() + "_SKIN.SGO"
+    open(os.path.join(dest, filename), "wb").write(bytes(skin.buf))
+    return filename
+
+
 def build(dest):
     cpk = Cpk(os.path.join(GAME, "Root.cpk"))
     files = {e["path"].upper(): e for e in cpk.entries()}
     written = []
     for source, name, recipe in CLONES:
         written += clone(cpk, files, source, name, recipe, dest)
+    for source, name, rgba in SOLIDS:
+        written.append(solid(source, name, rgba, dest))
     return written
 
 
