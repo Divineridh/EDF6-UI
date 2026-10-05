@@ -17,6 +17,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from patch import load
+import panelskin
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ORIGEN = os.path.join(RAIZ, "extract", "UI")
@@ -24,7 +25,7 @@ SALIDA = os.path.join(RAIZ, "build", "UI")
 PATCHES = os.path.join(RAIZ, "build", "Patches")
 PATCH_FILE = "EDF6UI_EquipmentScreen.txt"
 
-PANEL = "@app:/UI/Window_Test01_skin.sgo"
+PANEL = "@+app:/UI/EDF6UI_Panel_skin.sgo"
 PANEL_MARGIN = 24
 NONE = "@app:/UI/Transparent_skin.sgo"
 OFFSCREEN = -600
@@ -177,6 +178,10 @@ CAMBIOS = {
 ],
 # class and equipment box
 "LYT_HUIHQCURRENTSTATUS.SGO": [
+    ("19.1", "@+app:/UI/EDF6UI_ClassBox_skin.sgo"),
+    ("14.1", "@+app:/UI/EDF6UI_ClassName_skin.sgo"),
+    ("11.1", "@+app:/UI/EDF6UI_ClassData_skin.sgo"),
+    ("12.1", "@+app:/UI/EDF6UI_ClassData_skin.sgo"),
     ("19.2.0", n(PANEL_X)),
     ("19.2.1", n(CLASS_Y)),
     ("19.3.2", n(PANEL_W)),
@@ -210,13 +215,17 @@ def main():
     for nombre, pares in CAMBIOS.items():
         e = load(os.path.join(ORIGEN, nombre))
         for ruta, valor in pares:
-            if valor.startswith("@"):
+            if valor.startswith("@+"):
+                e.repoint(ruta, valor[2:], add=True)
+            elif valor.startswith("@"):
                 e.repoint(ruta, valor[1:])
             else:
                 e.set(ruta, valor)
         destino = os.path.join(SALIDA, nombre)
         open(destino, "wb").write(bytes(e.buf))
         print("%s: %d values, %d bytes" % (nombre, len(pares), len(e.buf)))
+    for nombre in panelskin.build(SALIDA):
+        print("%s: %d bytes" % (nombre, os.path.getsize(os.path.join(SALIDA, nombre))))
     os.makedirs(PATCHES, exist_ok=True)
     with open(os.path.join(PATCHES, PATCH_FILE), "w", newline="\r\n") as f:
         f.write(PATCH.format(column=COLUMN_W, name=NAME_W))

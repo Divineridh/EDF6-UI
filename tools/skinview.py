@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from cpk import Cpk
 from mdb import Mdb
-from rab import cmpl
+from rab import members
 from sgo import Sgo
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -15,25 +15,6 @@ GAME = r"C:\Descargas Pesadas\EARTH DEFENSE FORCE 6\EARTH DEFENSE FORCE 6"
 CORNER_TARGET = {"LT": (0, 0), "RT": (1, 0), "LB": (0, 1), "RB": (1, 1)}
 SIDE_TARGET = {"left": 0, "right": 1}
 ERAS = ("base", "B", "C")
-
-
-def archive_files(data):
-    count, table = struct.unpack_from("<II", data, 0x14)
-    files = {}
-    for i in range(count):
-        entry = table + i * 0x20
-        name_rel, size, folder, _, _, _, offset, _ = struct.unpack_from("<8I", data, entry)
-        e = entry + name_rel
-        while data[e:e + 2] != b"\0\0":
-            e += 2
-        name = data[entry + name_rel:e].decode("utf-16le")
-        raw = data[offset:offset + size + 8]
-        if raw[:4] == b"CMPL":
-            payload, _ = cmpl(raw[8:], struct.unpack_from(">I", raw, 4)[0])
-        else:
-            payload = raw[:size]
-        files[name.lower()] = payload
-    return files
 
 
 def texture_of(mdb, material):
@@ -57,7 +38,7 @@ class Skin:
         tree = Sgo(open(os.path.join(ROOT, "extract", "UI", name.upper() + "_SKIN.SGO"), "rb").read()).tree()
         base = Sgo(self.cpk.read(files["UI/" + tree[0].split("/")[-1].upper()])).tree()
         archive = base[0][0][0][0]
-        self.files = archive_files(self.cpk.read(files["UI/" + archive.split("/")[-1].upper()]))
+        self.files = members(self.cpk.read(files["UI/" + archive.split("/")[-1].upper()]))
         mdb_bytes = next(v for k, v in self.files.items() if k.endswith(".mdb"))
         self.mdb = Mdb(mdb_bytes)
         self.mdb.textures_off = struct.unpack_from("<I", mdb_bytes, 0x2C)[0]
