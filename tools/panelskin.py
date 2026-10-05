@@ -1,6 +1,7 @@
 import os
 import struct
 import sys
+from collections import namedtuple
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -12,12 +13,17 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GAME = r"C:\Descargas Pesadas\EARTH DEFENSE FORCE 6\EARTH DEFENSE FORCE 6"
 SOURCE = os.path.join(ROOT, "extract", "UI")
 
-FILL = (5, 14, 10)
+Palette = namedtuple("Palette", "fill border accent name_row data_row")
+
+GREEN = Palette((5, 14, 10), (47, 107, 74), (95, 163, 124), (25, 62, 42), (12, 32, 22))
+BLUE = Palette((5, 10, 18), (47, 82, 122), (100, 140, 196), (24, 44, 74), (11, 22, 38))
+VIOLET = Palette((12, 8, 18), (86, 62, 124), (148, 118, 196), (52, 34, 74), (25, 16, 38))
+
+BLUE_ERA = BLUE
+B_ERAS = VIOLET
+C_ERAS = GREEN
+
 FILL_ALPHA = 224
-BORDER = (47, 107, 74)
-ACCENT = (95, 163, 124)
-NAME_ROW = (25, 62, 42)
-DATA_ROW = (12, 32, 22)
 TAB_ALPHA = 204
 ACCENT_SELECTION = (255, 138, 31, 235)
 
@@ -83,19 +89,35 @@ def pixels(paint):
     return lambda dds: recolor(dds, paint)
 
 
+def panel(palette, dark, mid, light, fill_alpha):
+    return pixels(ramp(((dark, palette.fill), (mid, palette.border), (light, palette.accent)), fill_alpha))
+
+
+def per_variant(texture, paint):
+    stem, extension = texture.rsplit(".", 1)
+    return {
+        "%s.%s" % (stem, extension): paint(BLUE_ERA),
+        "%s_b.%s" % (stem, extension): paint(B_ERAS),
+        "%s_c.%s" % (stem, extension): paint(C_ERAS),
+    }
+
+
 CLONES = [
     ("WINDOW_TEST01", "EDF6UI_Panel", {
-        "palette01.dds": pixels(ramp(((19.5, FILL), (171.7, BORDER), (248.0, ACCENT)), 171)),
-        "edf6_window01.dds": pixels(ramp(((14.2, FILL), (104.1, BORDER), (192.0, ACCENT)), 177)),
-        "edf6_window01.b.dds": pixels(ramp(((0.0, FILL), (130.2, BORDER), (192.0, ACCENT)), 177)),
+        "palette01.dds": panel(BLUE_ERA, 19.5, 171.7, 248.0, 171),
+        "edf6_window01.b.dds": panel(B_ERAS, 0.0, 130.2, 192.0, 177),
+        "edf6_window01.dds": panel(C_ERAS, 14.2, 104.1, 192.0, 177),
     }),
     ("WINDOW05_SOLDIERINFO", "EDF6UI_ClassBox", {
-        "window5_soldierinfo_window.dds": pixels(flat(FILL, BORDER, {127: FILL_ALPHA})),
-        "window5_soldierinfo_frame.dds": pixels(gradient(BORDER, ACCENT)),
+        "window5_soldierinfo_window.dds": pixels(flat(C_ERAS.fill, C_ERAS.border, {127: FILL_ALPHA})),
+        "window5_soldierinfo_frame.dds": pixels(gradient(C_ERAS.border, C_ERAS.accent)),
     }),
-    ("SOLDIERINFO_NAME", "EDF6UI_ClassName", {"*": pixels(flat(NAME_ROW, ACCENT))}),
-    ("SOLDIERINFO_DATA", "EDF6UI_ClassData", {"*": pixels(flat(DATA_ROW, BORDER))}),
-    ("WEAPONSEL_INDEXBASE", "EDF6UI_Tab", {"*": framed(BORDER, FILL, TAB_ALPHA)}),
+    ("SOLDIERINFO_NAME", "EDF6UI_ClassName", per_variant(
+        "window5_soldierinfo_textbase1.dds", lambda p: pixels(flat(p.name_row, p.accent)))),
+    ("SOLDIERINFO_DATA", "EDF6UI_ClassData", per_variant(
+        "window5_soldierinfo_textbase2.dds", lambda p: pixels(flat(p.data_row, p.border)))),
+    ("WEAPONSEL_INDEXBASE", "EDF6UI_Tab", per_variant(
+        "weaponsel_indexbase01.dds", lambda p: framed(p.border, p.fill, TAB_ALPHA))),
 ]
 
 SOLIDS = [
