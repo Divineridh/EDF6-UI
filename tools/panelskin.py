@@ -18,10 +18,10 @@ Palette = namedtuple("Palette", "fill border accent name_row data_row")
 
 GREEN = Palette((5, 14, 10), (47, 107, 74), (95, 163, 124), (25, 62, 42), (12, 32, 22))
 BLUE = Palette((5, 10, 18), (47, 82, 122), (100, 140, 196), (24, 44, 74), (11, 22, 38))
-VIOLET = Palette((12, 8, 18), (86, 62, 124), (148, 118, 196), (52, 34, 74), (25, 16, 38))
+PLUM_GREY = Palette((11, 10, 13), (78, 72, 86), (138, 130, 150), (40, 36, 46), (20, 18, 24))
 
 BLUE_ERA = BLUE
-B_ERAS = VIOLET
+B_ERAS = PLUM_GREY
 C_ERAS = GREEN
 
 FILL_ALPHA = 224

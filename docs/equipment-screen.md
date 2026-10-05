@@ -197,10 +197,11 @@ bigger than raw.
 
 Each mesh variant (`X_mesh`, `.B`, `.c`) has its own material, and the game picks the variant by era.
 Checked in game by painting the three variants red, yellow and magenta: **base is the blue era and C
-the green one**. B is the remaining eras (beige and violet, not checked yet; the game's own B
-textures are lavender). So there can be three palettes, and the recipes in `panelskin.py` take one:
-navy for base, violet for B and the original green for C. The orange accent is a `Solid` skin, one
-color for every era.
+the green one**, and B serves both the beige and the violet eras (checked in both). So there can be
+three palettes, and the recipes in `panelskin.py` take one: navy for base, the original green for C
+and a desaturated plum grey for B. B needs to be neutral: a violet palette looked pink in game and
+clashed with the beige background, which is also why the game's own B textures are a greyish
+lavender. The orange accent is a `Solid` skin, one color for every era.
 
 Most skins already have one texture per variant (Window_Test01: `Palette01`, `edf6_window01.B`,
 `edf6_window01`; the `_b` / `_c` ones elsewhere). Window05_SoldierInfo doesn't: its six materials
