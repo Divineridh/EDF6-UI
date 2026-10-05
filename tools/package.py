@@ -5,6 +5,8 @@ import shutil
 import sys
 import zipfile
 
+import panelskin
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BUILD = os.path.join(ROOT, "build")
 SOURCE = os.path.join(ROOT, "package")
@@ -25,6 +27,7 @@ CONTENTS = [
      "Mods/WEAPON/WEAPONTEXT.EN.SGO"),
     (os.path.join(SOURCE, "README.txt"), "README.txt"),
 ]
+CONTENTS += [(os.path.join(BUILD, "UI", f), "Mods/UI/" + f) for f in panelskin.output_names()]
 
 
 def main():

@@ -53,8 +53,22 @@ class Editable(Sgo):
             p = e + 2
         return out
 
-    def repoint(self, path, text):
+    def text_at(self, path):
+        for p, rec, old in self.str_slots():
+            if p == path:
+                return old
+        raise KeyError(path)
+
+    def append(self, text):
+        target = len(self.buf)
+        self.buf += text.encode("utf-16le") + b"\x00\x00"
+        self.d = bytes(self.buf)
+        return target
+
+    def repoint(self, path, text, add=False):
         target = self.table().get(text)
+        if target is None and add:
+            target = self.append(text)
         if target is None:
             raise KeyError("that string isn't in the file's table: " + text)
         for p, rec, old in self.str_slots():

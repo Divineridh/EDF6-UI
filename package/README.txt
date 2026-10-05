@@ -9,8 +9,9 @@ you can install just one if you want.
    columns, 13 visible rows, full names and a highlight that covers the whole
    row. The weapon's name and description go below it, and the stats get their
    own panel on the right, above the class box, so nothing overlaps. The panels
-   use one of the game's thin-bordered windows, so the layout holds on every
-   mission-era background.
+   and the class box use the mod's own dark green palette, built on one of the
+   game's thin-bordered windows, so the layout holds on every mission-era
+   background.
 
    A small patch, Mods\Patches\EDF6UI_EquipmentScreen.txt, changes two sizes
    the game hard-codes: the selection highlight (355 px) and the room for item
@@ -59,10 +60,12 @@ EDF6.exe. It ends up like this:
     EARTH DEFENSE FORCE 6\Mods\UI\LYT_HUIHQWEAPONSELECT.SGO
     EARTH DEFENSE FORCE 6\Mods\UI\LYT_MAINFRAME.SGO
     EARTH DEFENSE FORCE 6\Mods\UI\LYT_HUIHQCURRENTSTATUS.SGO
+    EARTH DEFENSE FORCE 6\Mods\UI\EDF6UI_*.SGO and EDF6UI_*.RAB (the skins)
     EARTH DEFENSE FORCE 6\Mods\Patches\EDF6UI_EquipmentScreen.txt
     EARTH DEFENSE FORCE 6\Mods\WEAPON\WEAPONTEXT.EN.SGO
 
-To revert, delete those files. Root.cpk is never touched.
+To revert, delete those files. Root.cpk is never touched. Restart the game
+after installing or removing: the HQ keeps its layouts in memory.
 
 
 THE FRAME IS REMOVED ACROSS THE WHOLE HQ

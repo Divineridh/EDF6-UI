@@ -46,6 +46,59 @@ def entries(data):
         p += 8 + used
 
 
+def members(data):
+    count, table = struct.unpack_from("<II", data, 0x14)
+    found = {}
+    for i in range(count):
+        entry = table + i * 0x20
+        name_rel, size, _, _, _, _, offset, _ = struct.unpack_from("<8I", data, entry)
+        e = entry + name_rel
+        while data[e:e + 2] != b"\0\0":
+            e += 2
+        name = data[entry + name_rel:e].decode("utf-16le").lower()
+        block = data[offset:offset + size]
+        if block[:4] == b"CMPL":
+            found[name], _ = cmpl(block[8:], struct.unpack_from(">I", block, 4)[0])
+        else:
+            found[name] = block
+    return found
+
+
+def cmpl_literal(payload):
+    out = bytearray(b"CMPL" + struct.pack(">I", len(payload)))
+    for i in range(0, len(payload), 8):
+        out.append(0xFF)
+        out += payload[i:i + 8]
+    return bytes(out)
+
+
+def rebuild(data, replacements):
+    count, table = struct.unpack_from("<II", data, 0x14)
+    entries = []
+    for i in range(count):
+        entry = table + i * 0x20
+        name_rel, size, _, _, _, _, offset, _ = struct.unpack_from("<8I", data, entry)
+        e = entry + name_rel
+        while data[e:e + 2] != b"\0\0":
+            e += 2
+        name = data[entry + name_rel:e].decode("utf-16le").lower()
+        entries.append((entry, name, data[offset:offset + size]))
+    start = min(struct.unpack_from("<I", data, entry + 24)[0] for entry, _, _ in entries)
+    out = bytearray(data[:start])
+    biggest_block = biggest_payload = 0
+    for entry, name, block in entries:
+        if name in replacements:
+            block = cmpl_literal(replacements[name])
+        payload_size = struct.unpack_from(">I", block, 4)[0] if block[:4] == b"CMPL" else len(block)
+        struct.pack_into("<I", out, entry + 4, len(block))
+        struct.pack_into("<I", out, entry + 24, len(out))
+        out += block
+        biggest_block = max(biggest_block, len(block))
+        biggest_payload = max(biggest_payload, payload_size)
+    struct.pack_into("<II", out, 0x0C, biggest_block, biggest_payload)
+    return bytes(out)
+
+
 def kind(payload):
     if payload[:4] == b"DDS ":
         return "dds"

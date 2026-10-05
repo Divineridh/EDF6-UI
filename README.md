@@ -150,6 +150,7 @@ python tools/rab.py <file.rab> [dest]                         # list or extract 
 python tools/mdb.py <file.mdb>                                # bones, textures and skinned vertices
 python tools/skins.py [filter...]                             # minimum size and overflow per era
 python tools/skinview.py <SKIN> <w> <h> <dest>               # render a skin at a size, per era family
+python tools/panelskin.py [dest]                             # the mod's recolored skins (gen_layout runs it)
 python tools/patch.py <file.sgo> slots 36.                    # editable slots of a node
 python tools/patch.py <source.sgo> set 36.3.3=401 <dest.sgo>
 python tools/dsgo.py <file.dsgo> json                         # data (weapons, texts, manual)

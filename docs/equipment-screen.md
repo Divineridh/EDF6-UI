@@ -177,6 +177,25 @@ pieces are 218 and 190 px.
 - Base mesh: the left pieces are 702 px wide, so narrow boxes spill past their *right* edge instead.
   The fill is uniform there, which is why the blue era looked right.
 
+## The mod's own skins
+
+Two things that hadn't been tried before work in game:
+
+- **New strings in a layout.** The string table sits at the end of the file and records point to it
+  with relative offsets, so `patch.py` can append a path and re-point a record to it (`@+` in
+  `gen_layout.py`) without moving anything else.
+- **New files.** EDFModLoader serves files from `Mods\` that don't exist in `Root.cpk`, and skins
+  outside the HQ resource group load when a node uses them.
+
+`tools/panelskin.py` clones a game skin under a new name (skin SGO, base SGO and `_MERGE.rab`) and
+repaints its textures; the mesh, margins and per-era geometry stay the game's. The panels clone
+Window_Test01 and the class box clones Window05_SoldierInfo, SoldierInfo_Name and SoldierInfo_Data,
+all in the handoff's palette. `rab.py` writes the repainted textures as literal-only CMPL, which any
+LZSS decoder reads, about 12% bigger than raw.
+
+The HQ keeps its layouts in memory: reopening the equipment screen re-reads skins but not layouts,
+so a layout change needs a game restart (or leaving the HQ) to show.
+
 ## Hard-coded in EDF.dll (HUiHQWeaponSelect)
 
 | what | where | effect |
@@ -234,6 +253,7 @@ python tools/rab.py <file.rab> [dest]       # list or extract an SSA archive (CM
 python tools/mdb.py <file.mdb>              # bones, textures and skinned vertices of a model
 python tools/skins.py [filter...]           # minimum size and overflow per skin and era family
 python tools/skinview.py <SKIN> <w> <h> <dest>  # render a skin at a given size for base, B and C
+python tools/panelskin.py [dest]               # build the mod's recolored skins
 ```
 
 CMPL is LZSS with a 4096-byte window starting at 0xFEE, LSB-first flag bits, and a 12-bit offset made of
